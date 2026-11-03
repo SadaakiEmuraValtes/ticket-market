@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    html, body { margin: 0; padding: 0; background: white; overflow: hidden; }
+    body { padding: 4px; }
+    .sf-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+    .sf-head span { font-weight: 700; font-size: 15px; color: var(--accent); }
+    .sf-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 12px; }
+    .sf-table th { background: var(--accent); color: white; padding: 5px 0; font-size: 11px; }
+    .sf-table th.sun { background: #B91C1C; } .sf-table th.sat { background: #1D4ED8; }
+    .sf-table td { border: 1px solid var(--gray-bd); height: 52px; vertical-align: top; padding: 3px 4px; }
+    .sf-day { font-size: 11px; color: var(--gray); }
+    .sf-perf { display: block; margin-top: 2px; border-radius: 4px; padding: 1px 3px; font-size: 11px; font-weight: 700; text-align: center; }
+    .sf-ok      { background: #D1FAE5; color: #047857; }
+    .sf-few     { background: #FEF3C7; color: #B45309; }
+    .sf-soldout { background: #FEE2E2; color: #B91C1C; }
+    .sf-closed  { background: #ECEAF1; color: var(--gray); }
+    td.clickable { cursor: pointer; } td.clickable:hover { background: var(--light-bg); }
+    td.today { outline: 2px solid var(--primary); outline-offset: -2px; }
+    td.empty { background: #FAFAFC; }
+  </style>
+</head>
+<body>
+  <script src="data/master.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/i18n.js"></script>
+
+  <div id="schedule-wrap"></div>
+
+  <script>
+    let ev = null, months = [], mIdx = 0;
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const id = new URLSearchParams(window.location.search).get("id");
+      ev = id && App.getEvent(id);
+      if (!ev) { document.getElementById("schedule-wrap").textContent = I18n.t("イベントが見つかりません。", "Event not found."); return; }
+      // 公演がある月の一覧（最初の受付中公演の月から表示）
+      months = [...new Set(ev.perfs.map(pf => pf.date.slice(0, 7)))];
+      const firstOpen = App.futurePerfs(ev)[0];
+      mIdx = firstOpen ? months.indexOf(firstOpen.date.slice(0, 7)) : 0;
+      render();
+    });
+
+    function move(d) { mIdx = Math.max(0, Math.min(months.length - 1, mIdx + d)); render(); }
+
+    function render() {
+      const [y, m] = months[mIdx].split("-").map(Number);
+      const first = new Date(y, m - 1, 1), last = new Date(y, m, 0);
+      const today = App.todayStr();
+      const st = App.salesStatus(ev).key;
+      const buyable = !["before", "soldout", "closed"].includes(st);
+      const label = { ok: "◎", few: "△", soldout: "×", closed: "-" };
+
+      let cells = [];
+      for (let i = 0; i < first.getDay(); i++) cells.push(`<td class="empty"></td>`);
+      for (let d = 1; d <= last.getDate(); d++) {
+        const ds = `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+        const perfs = ev.perfs.filter(pf => pf.date === ds);
+        const avs = perfs.map(pf => App.perfAvailability(ev, pf));
+        const clickable = buyable && avs.some(a => a.key === "ok" || a.key === "few");
+        cells.push(`<td id="sf-day-${ds}" data-date="${ds}" data-perf-count="${perfs.length}" class="${clickable ? "clickable" : ""}${ds === today ? " today" : ""}"
+                       ${clickable ? `onclick="goSelect('${ds}')" title="${I18n.t("この日の公演を選択", "Select this date")}"` : ""}>
+            <span class="sf-day">${d}</span>
+            ${perfs.map((pf, i) => `<span class="sf-perf sf-${avs[i].key}" data-perf-id="${pf.id}" data-availability="${avs[i].key}">${pf.start} ${label[avs[i].key]}</span>`).join("")}
+          </td>`);
+      }
+      while (cells.length % 7) cells.push(`<td class="empty"></td>`);
+      let rows = "";
+      for (let i = 0; i < cells.length; i += 7) rows += "<tr>" + cells.slice(i, i + 7).join("") + "</tr>";
+
+      const en = I18n.isEN();
+      const monthLabel = en ? new Date(y, m - 1, 1).toLocaleDateString("en-US", { year: "numeric", month: "long" }) : `${y}年${m}月`;
+      document.getElementById("schedule-wrap").innerHTML = `
+        <div class="sf-head">
+          <button class="cal-nav" id="sf-prev" onclick="move(-1)" ${mIdx === 0 ? "disabled" : ""} title="${I18n.t("前の月", "Previous month")}">◀</button>
+          <span id="sf-month-label">${monthLabel}</span>
+          <button class="cal-nav" id="sf-next" onclick="move(1)" ${mIdx === months.length - 1 ? "disabled" : ""} title="${I18n.t("次の月", "Next month")}">▶</button>
+        </div>
+        <table class="sf-table" id="sf-table">
+          <tr>${[0,1,2,3,4,5,6].map(i => `<th class="${i === 0 ? "sun" : i === 6 ? "sat" : ""}">${App.dowName(i)}</th>`).join("")}</tr>
+          ${rows}
+        </table>
+        <div style="display:flex;gap:12px;margin-top:6px;font-size:11px;color:var(--gray);flex-wrap:wrap">
+          <span>◎ ${I18n.t("余裕あり", "Available")}</span><span>△ ${I18n.t("残りわずか", "Few left")}</span>
+          <span>× ${I18n.t("予定枚数終了", "Sold out")}</span><span>- ${I18n.t("受付終了", "Closed")}</span>
+          <span style="margin-left:auto">${I18n.t("※ 日付クリックで公演選択へ", "* Click a date to select")}</span>
+        </div>`;
+
+      setTimeout(() => window.parent.postMessage({ type: "scheduleFrameHeight", height: document.getElementById("schedule-wrap").offsetHeight + 12 }, "*"), 50);
+    }
+
+    function goSelect(date) {
+      const url = `ticket-select.html?eventId=${ev.id}&date=${date}`;
+      window.parent.location.href = I18n.urlWith(url);
+    }
+  </script>
+</body>
+</html>

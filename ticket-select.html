@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>チケット選択 | TicketMarket Demo</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <script src="data/master.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/layout.js"></script>
+
+  <div class="page-wrap" style="max-width:1040px">
+    <div class="breadcrumb">
+      <a href="search.html" data-i18n-en="Find Events">イベントを探す</a><span class="sep">›</span>
+      <a id="event-detail-link" href="#" data-i18n-en="Event Details">イベント詳細</a><span class="sep">›</span>
+      <span data-i18n-en="Select Tickets">チケット選択</span>
+    </div>
+
+    <div class="step-bar">
+      <div class="step-item active" id="step0-tab" data-i18n-en="① Select Tickets">① チケット選択</div>
+      <div class="step-item" data-i18n-en="② Buyer & Payment">② 購入者情報・支払方法</div>
+      <div class="step-item" data-i18n-en="③ Confirm">③ 内容確認</div>
+      <div class="step-item" data-i18n-en="④ Complete">④ 完了</div>
+    </div>
+
+    <div id="event-banner" class="alert alert-info"></div>
+    <div id="status-alert" class="alert alert-warn hidden"></div>
+
+    <div class="two-col">
+      <!-- ① 公演選択 -->
+      <div class="form-section">
+        <h3 data-i18n-en="① Select a Performance">① 公演を選択</h3>
+        <div class="form-group mb-16" id="g-perf">
+          <label for="ts-perf" data-i18n-en="Date / Time / Venue *">公演日時・会場 *</label>
+          <select id="ts-perf" onchange="onPerfChange()"></select>
+          <span class="error-msg" data-i18n-en="Please select a performance">公演を選択してください</span>
+        </div>
+        <div id="perf-info" class="muted mb-16"></div>
+        <button id="btn-check-seats" class="btn btn-primary btn-block btn-lg" onclick="checkSeats(true)" data-i18n-en="Check Availability →">空席状況を確認 →</button>
+        <ul class="notes-list mt-16" id="ts-notes" style="color:var(--gray)"></ul>
+      </div>
+
+      <!-- ② 席種・枚数 -->
+      <div class="form-section">
+        <h3 data-i18n-en="② Select Seats & Quantity">② 席種・枚数を選択</h3>
+        <div id="seat-placeholder" class="alert alert-info" style="margin-bottom:0" data-i18n-en='Select a performance on the left and click "Check Availability".'>
+          左で公演を選択し「空席状況を確認」を押してください。
+        </div>
+
+        <div id="seat-area" class="hidden">
+          <div id="seat-perf-label" class="alert alert-success" style="font-size:13px"></div>
+          <div class="table-wrap">
+            <table class="data-table" id="seat-table">
+              <thead><tr><th></th><th data-i18n-en="Seat">席種</th><th class="num" data-i18n-en="Price">料金</th><th class="center" data-i18n-en="Avail.">残席</th></tr></thead>
+              <tbody id="seat-list"></tbody>
+            </table>
+          </div>
+
+          <div id="qty-area" class="hidden mt-16">
+            <div style="font-weight:700;color:var(--accent);margin-bottom:4px" id="qty-title"></div>
+            <div id="qty-list"></div>
+            <div class="price-summary mt-16" id="ts-summary">
+              <div class="ps-row"><span data-i18n-en="Tickets">枚数</span><span id="ts-qty">0枚</span></div>
+              <div class="ps-total"><span data-i18n-en="Ticket subtotal">チケット代金 小計</span><span id="ts-subtotal">¥0</span></div>
+              <div class="muted" style="margin-top:4px" id="ts-fee-note"></div>
+            </div>
+          </div>
+
+          <div id="ts-error" class="alert alert-danger hidden mt-16"></div>
+          <button id="btn-proceed" class="btn btn-primary btn-block btn-lg mt-16" disabled onclick="proceed()"></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let ev = null, perf = null, seat = null, status = null;
+
+    document.addEventListener("DOMContentLoaded", () => {
+      buildPage({ title: I18n.t("チケット選択", "Select Tickets") });
+      if (!App.requireLogin()) return;
+
+      const q = new URLSearchParams(window.location.search);
+      ev = App.getEvent(q.get("eventId"));
+      if (!ev) { I18n.go("search.html"); return; }
+      status = App.salesStatus(ev);
+
+      document.getElementById("event-detail-link").href = I18n.urlWith(`event.html?id=${ev.id}`);
+      document.getElementById("event-banner").innerHTML =
+        `${App.genreEmoji(ev.genre)} <strong id="ts-event-title">${ev.title}</strong>&nbsp; <span class="muted">${ev.performer}</span>
+         &nbsp;<span class="badge ${status.cls}" id="ts-status" data-sales-status="${status.key}">${status.label}</span>`;
+      document.getElementById("btn-proceed").textContent = ev.saleType === "lottery"
+        ? I18n.t("抽選申込手続きへ進む →", "Proceed to Lottery Entry →") : I18n.t("購入手続きへ進む →", "Proceed to Checkout →");
+
+      const notes = [
+        I18n.t(`1申込あたり${ev.maxPerOrder}枚まで`, `Up to ${ev.maxPerOrder} tickets per order`),
+        I18n.t("購入は公演日の前日まで", "Sales close the day before the performance"),
+        ev.requireAdult ? I18n.t("子供券のみの購入不可", "Child tickets cannot be purchased alone") : null,
+        ev.cancellable ? null : I18n.t("購入後のキャンセル不可", "No cancellations after purchase"),
+      ].filter(Boolean);
+      document.getElementById("ts-notes").innerHTML = notes.map(n => `<li>${n}</li>`).join("");
+
+      // 販売状況による制限
+      if (["before", "soldout", "closed"].includes(status.key)) {
+        const msg = {
+          before:  I18n.t(`このイベントは発売前です。一般発売：${App.fmtDateDow(App.salesStartDate(ev))} 10:00〜`, `Not on sale yet. On sale from ${App.fmtDateSlash(App.salesStartDate(ev))} 10:00.`),
+          soldout: I18n.t("このイベントは全公演予定枚数終了です。", "All performances are sold out."),
+          closed:  I18n.t("このイベントの受付は終了しました。", "Sales for this event have closed."),
+        }[status.key];
+        const a = document.getElementById("status-alert"); a.textContent = "⚠️ " + msg; a.classList.remove("hidden");
+        document.getElementById("btn-check-seats").disabled = true;
+      } else if (ev.saleType === "lottery") {
+        const a = document.getElementById("status-alert");
+        a.innerHTML = "🎲 " + I18n.t(`抽選販売です。受付期間：〜${App.fmtDateDow(App.lotteryEndDate(ev))} 23:59／当落発表：${App.fmtDateDow(App.lotteryResultDate(ev))}`,
+                                    `Lottery sale. Entries until ${App.fmtDateSlash(App.lotteryEndDate(ev))} 23:59 / results on ${App.fmtDateSlash(App.lotteryResultDate(ev))}.`);
+        a.classList.remove("hidden");
+      }
+
+      buildPerfOptions();
+      const preset = q.get("perfId") || (q.get("date") && (ev.perfs.find(pf => pf.date === q.get("date") && App.isPerfOnSale(pf)) || {}).id);
+      if (preset && ev.perfs.some(pf => pf.id === preset)) {
+        document.getElementById("ts-perf").value = preset;
+        onPerfChange();
+        if (!document.getElementById("btn-check-seats").disabled) checkSeats(false);
+      }
+    });
+
+    function buildPerfOptions() {
+      const sel = document.getElementById("ts-perf");
+      sel.innerHTML = `<option value="">${I18n.t("-- 公演を選択してください --", "-- Select a performance --")}</option>` +
+        ev.perfs.map(pf => {
+          const av = App.perfAvailability(ev, pf);
+          const suffix = av.key === "closed" ? I18n.t("（受付終了）", " (Closed)") : av.key === "soldout" ? I18n.t("（予定枚数終了）", " (Sold out)") : av.key === "few" ? I18n.t("（残りわずか）", " (Few left)") : "";
+          return `<option value="${pf.id}" data-date="${pf.date}" data-start="${pf.start}" data-availability="${av.key}" ${av.key === "closed" ? "disabled" : ""}>
+                    ${App.fmtDateDow(pf.date)} ${pf.start}${I18n.t("開演", "")} ／ ${App.venueName(pf.venue)}${suffix}</option>`;
+        }).join("");
+    }
+
+    function onPerfChange() {
+      const id = document.getElementById("ts-perf").value;
+      perf = id ? App.getPerf(ev, id) : null;
+      document.getElementById("g-perf").classList.remove("has-error");
+      document.getElementById("perf-info").innerHTML = perf
+        ? `📍 ${App.venueName(perf.venue)}（${App.getVenue(perf.venue).city}）<br>🚪 ${I18n.t("開場", "Doors")} ${perf.open} ／ ▶ ${I18n.t("開演", "Start")} ${perf.start}`
+        : "";
+      // 公演を変えたら席種選択をリセット
+      document.getElementById("seat-area").classList.add("hidden");
+      document.getElementById("seat-placeholder").classList.remove("hidden");
+      seat = null;
+    }
+
+    function checkSeats(withLoading) {
+      if (!perf) { document.getElementById("g-perf").classList.add("has-error"); return; }
+      const exec = () => renderSeats();
+      if (withLoading) {
+        App.showLoading(I18n.t("空席状況を確認中...", "Checking availability..."));
+        setTimeout(() => { App.hideLoading(); exec(); }, App.loadingDelay());
+      } else exec();
+    }
+
+    function renderSeats() {
+      seat = null;
+      document.getElementById("seat-placeholder").classList.add("hidden");
+      document.getElementById("seat-area").classList.remove("hidden");
+      document.getElementById("qty-area").classList.add("hidden");
+      document.getElementById("ts-error").classList.add("hidden");
+      document.getElementById("btn-proceed").disabled = true;
+      document.getElementById("seat-perf-label").innerHTML =
+        `✅ <span id="seat-perf-date">${App.fmtDateJP(perf.date)}</span> ${perf.start}${I18n.t("開演", "")}<br>📍 <span id="seat-perf-venue">${App.venueName(perf.venue)}</span>`;
+
+      const lottery = ev.saleType === "lottery";
+      document.getElementById("seat-list").innerHTML = App.getSeats(ev).map(s => {
+        const av = App.seatAvailability(ev, perf, s);
+        const prices = Object.values(s.prices);
+        const priceText = Math.min(...prices) === Math.max(...prices) ? App.fmtPrice(prices[0]) : `${App.fmtPrice(Math.min(...prices))}〜${App.fmtPrice(Math.max(...prices))}`;
+        const availText = lottery ? I18n.t("抽選", "Lottery")
+          : av.key === "soldout" ? I18n.t("× 予定枚数終了", "× Sold out")
+          : av.key === "few" ? I18n.t(`△ 残り${av.remaining}枚`, `△ ${av.remaining} left`) : I18n.t("◎ 余裕あり", "◎ Available");
+        const disabled = !lottery && av.key === "soldout";
+        return `<tr data-seat-key="${s.key}" data-seat-name="${s.name}" data-availability="${av.key}" data-remaining="${av.remaining}" style="${disabled ? "opacity:.5" : "cursor:pointer"}" ${disabled ? "" : `onclick="selectSeat('${s.key}')"`}>
+          <td class="center"><input type="radio" name="seat" id="seat-${App.idSafe(s.name)}" value="${s.key}" ${disabled ? "disabled" : ""} style="accent-color:var(--primary);width:16px;height:16px"></td>
+          <td class="seat-name" style="font-weight:600">${s.name}</td>
+          <td class="num seat-price">${priceText}</td>
+          <td class="center seat-avail"><span class="mark mark-${av.key}" style="font-size:13px">${availText}</span></td>
+        </tr>`;
+      }).join("");
+    }
+
+    function selectSeat(key) {
+      seat = App.getSeat(ev, key);
+      document.getElementById("seat-" + App.idSafe(seat.name)).checked = true;
+      document.getElementById("qty-area").classList.remove("hidden");
+      document.getElementById("qty-title").textContent = I18n.t(`「${seat.name}」の券種・枚数`, `Ticket types for "${seat.name}"`);
+      const max = ev.maxPerOrder;
+      document.getElementById("qty-list").innerHTML = App.getTypes(ev).filter(t => seat.prices[t] !== undefined).map(t => `
+        <div class="qty-row" id="qty-row-${t}" data-type="${t}" data-type-name="${TICKET_TYPES[t].name}">
+          <span class="qty-name">${App.typeName(t)}</span>
+          <span class="qty-price">${seat.prices[t] === 0 ? I18n.t("無料", "Free") : App.fmtPrice(seat.prices[t])}</span>
+          <select id="qty-${t}" data-type="${t}" onchange="updateSummary()">
+            ${Array.from({ length: max + 1 }, (_, i) => `<option value="${i}">${I18n.t(`${i}枚`, `${i}`)}</option>`).join("")}
+          </select>
+        </div>`).join("");
+      updateSummary();
+    }
+
+    function currentItems() {
+      if (!seat) return [];
+      return App.getTypes(ev).filter(t => seat.prices[t] !== undefined).map(t => ({
+        typeKey: t, price: seat.prices[t], qty: +document.getElementById("qty-" + t).value,
+      }));
+    }
+
+    function updateSummary() {
+      const items = currentItems();
+      const fees = App.calcFees(items, null, null);
+      document.getElementById("ts-qty").textContent = I18n.t(`${fees.qty}枚`, `${fees.qty}`);
+      document.getElementById("ts-subtotal").textContent = App.fmtPrice(fees.subtotal);
+      document.getElementById("ts-fee-note").textContent = I18n.t(
+        `※ 別途システム利用料 ${App.fmtPrice(SYSTEM_FEE)}×${fees.paidQty}枚 と受取・決済手数料がかかります`,
+        `* Plus system fee ${App.fmtPrice(SYSTEM_FEE)} x ${fees.paidQty} and pickup/payment fees`);
+      const err = fees.qty === 0 ? "" : App.validateSelection(ev, perf, seat, items, App.currentUser().id);
+      const errEl = document.getElementById("ts-error");
+      errEl.textContent = err; errEl.classList.toggle("hidden", !err);
+      document.getElementById("btn-proceed").disabled = fees.qty === 0 || !!err;
+    }
+
+    function proceed() {
+      const items = currentItems().filter(i => i.qty > 0);
+      const err = App.validateSelection(ev, perf, seat, items, App.currentUser().id);
+      if (err) { const el = document.getElementById("ts-error"); el.textContent = err; el.classList.remove("hidden"); return; }
+      App.saveCart({ eventId: ev.id, perfId: perf.id, seatKey: seat.key, items });
+      I18n.go("purchase.html");
+    }
+  </script>
+</body>
+</html>

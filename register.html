@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>会員登録 | TicketMarket Demo</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <script src="data/master.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/layout.js"></script>
+
+  <div class="page-wrap" style="max-width:640px">
+    <div class="page-title" data-i18n-en="📝 Sign Up">📝 新規会員登録</div>
+    <div class="page-subtitle" data-i18n-en="Free registration. You will be logged in immediately (demo — data is stored only in this browser).">無料で登録できます。登録後すぐにログイン状態になります（デモのためブラウザ内にのみ保存）</div>
+
+    <div class="form-section">
+      <div class="form-grid-2">
+        <div class="form-group" id="g-name">
+          <label for="r-name"><span data-i18n-en="Full Name">氏名</span><span class="req">*</span></label>
+          <input type="text" id="r-name" placeholder="山田 太郎" data-i18n-ph-en="Full name">
+          <span class="error-msg" data-i18n-en="Required">必須項目です</span>
+        </div>
+        <div class="form-group" id="g-kana">
+          <label for="r-kana"><span data-i18n-en="Name (Katakana)">氏名（フリガナ）</span><span class="req">*</span></label>
+          <input type="text" id="r-kana" placeholder="ヤマダ タロウ">
+          <span class="error-msg" data-i18n-en="Please enter in full-width katakana">全角カタカナで入力してください</span>
+        </div>
+        <div class="form-group" id="g-email" style="grid-column:1/-1">
+          <label for="r-email"><span data-i18n-en="Email Address">メールアドレス</span><span class="req">*</span></label>
+          <input type="email" id="r-email" placeholder="user@example.com">
+          <span class="error-msg" id="r-email-error" data-i18n-en="Please enter a valid email address">正しいメールアドレスを入力してください</span>
+        </div>
+        <div class="form-group" id="g-pw">
+          <label for="r-pw"><span data-i18n-en="Password">パスワード</span><span class="req">*</span></label>
+          <input type="password" id="r-pw" oninput="pwStrength()">
+          <span class="hint" data-i18n-en="10+ chars incl. uppercase, lowercase, number and symbol">10文字以上・英大文字/英小文字/数字/記号をすべて含む</span>
+          <span class="hint" id="pw-strength"></span>
+          <span class="error-msg" data-i18n-en="Does not meet the password policy">パスワードの条件を満たしていません</span>
+        </div>
+        <div class="form-group" id="g-pw2">
+          <label for="r-pw2"><span data-i18n-en="Confirm Password">パスワード（確認）</span><span class="req">*</span></label>
+          <input type="password" id="r-pw2">
+          <span class="error-msg" data-i18n-en="Passwords do not match">パスワードが一致しません</span>
+        </div>
+        <div class="form-group" id="g-phone">
+          <label for="r-phone"><span data-i18n-en="Phone">電話番号</span><span class="req">*</span></label>
+          <input type="tel" id="r-phone" placeholder="090-1234-5678">
+          <span class="error-msg" data-i18n-en="Format: 090-1234-5678">090-1234-5678 の形式で入力してください</span>
+        </div>
+        <div class="form-group" id="g-birth">
+          <label for="r-birth"><span data-i18n-en="Date of Birth">生年月日</span><span class="req">*</span></label>
+          <div class="date-input-wrap">
+            <input type="text" id="r-birth" placeholder="yyyy/mm/dd" maxlength="10" oninput="autoFormatDate(this)">
+            <div class="dp-btn" id="r-birth-cal-btn" onclick="openDatePicker('r-birth')">📅</div>
+          </div>
+          <span class="error-msg" data-i18n-en="Please enter a valid date (age 13+)">正しい日付を入力してください（13歳以上）</span>
+        </div>
+        <div class="form-group" id="g-postal">
+          <label for="r-postal" data-i18n-en="Postal Code (optional)">郵便番号（任意）</label>
+          <input type="text" id="r-postal" placeholder="123-4567" maxlength="8">
+          <span class="error-msg" data-i18n-en="Format: 123-4567">123-4567 の形式で入力してください</span>
+        </div>
+        <div class="form-group" id="g-address">
+          <label for="r-address" data-i18n-en="Address (optional)">住所（任意）</label>
+          <input type="text" id="r-address" placeholder="東京都千代田区…">
+        </div>
+      </div>
+
+      <label class="check-line mt-16" id="g-agree"><input type="checkbox" id="r-agree">
+        <span data-i18n-en="I agree to the Terms of Use and Privacy Policy (demo).">利用規約・プライバシーポリシーに同意します（デモ）</span></label>
+
+      <div id="reg-err" class="alert alert-danger hidden mt-16"></div>
+      <button id="btn-register" class="btn btn-primary btn-block btn-lg mt-16" onclick="doRegister()" data-i18n-en="Create Account">登録する</button>
+      <p style="text-align:center;font-size:13px;margin-top:14px">
+        <span data-i18n-en="Already have an account?">既にアカウントをお持ちの方は</span> <a href="login.html" id="link-login" data-i18n-en="Log In">ログイン</a>
+      </p>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      buildPage({ title: I18n.t("会員登録", "Sign Up") });
+      if (App.isLoggedIn()) I18n.go("mypage.html");
+    });
+
+    function pwRules(pw) {
+      return [pw.length >= 10, /[A-Z]/.test(pw), /[a-z]/.test(pw), /\d/.test(pw), /[^A-Za-z0-9]/.test(pw)];
+    }
+    function pwStrength() {
+      const n = pwRules(document.getElementById("r-pw").value).filter(Boolean).length;
+      const el = document.getElementById("pw-strength");
+      el.textContent = I18n.t(`強度：${["", "とても弱い", "弱い", "普通", "やや強い", "強い"][n]}`, `Strength: ${["", "Very weak", "Weak", "Fair", "Good", "Strong"][n]}`);
+      el.style.color = n >= 5 ? "var(--success)" : n >= 3 ? "var(--warn)" : "var(--danger)";
+      if (!n) el.textContent = "";
+    }
+
+    function doRegister() {
+      const v = id => document.getElementById(id).value.trim();
+      const d = { name: v("r-name"), kana: v("r-kana"), email: v("r-email"), password: document.getElementById("r-pw").value,
+                  pw2: document.getElementById("r-pw2").value, phone: v("r-phone"), birthdate: App.parseDateStr(v("r-birth")),
+                  postal: v("r-postal"), address: v("r-address") };
+      const age = d.birthdate ? (App.today() - new Date(d.birthdate + "T00:00:00")) / (365.25 * 86400000) : 0;
+      const checks = [
+        ["g-name", !!d.name],
+        ["g-kana", /^[ァ-ヶー　 ]+$/.test(d.kana)],
+        ["g-email", /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email)],
+        ["g-pw", pwRules(d.password).every(Boolean)],
+        ["g-pw2", !!d.pw2 && d.password === d.pw2],
+        ["g-phone", /^0\d{1,4}-\d{1,4}-\d{3,4}$/.test(d.phone)],
+        ["g-birth", !!d.birthdate && age >= 13 && age < 120],
+        ["g-postal", !d.postal || /^\d{3}-\d{4}$/.test(d.postal)],
+      ];
+      let ok = true;
+      checks.forEach(([id, valid]) => { document.getElementById(id).classList.toggle("has-error", !valid); if (!valid) ok = false; });
+      const errEl = document.getElementById("reg-err");
+      if (!ok) { errEl.textContent = I18n.t("入力内容に誤りがあります。", "Please correct the highlighted fields."); errEl.classList.remove("hidden"); return; }
+      if (!document.getElementById("r-agree").checked) { errEl.textContent = I18n.t("利用規約への同意が必要です。", "You must agree to the Terms of Use."); errEl.classList.remove("hidden"); return; }
+
+      App.showLoading(I18n.t("登録中...", "Creating account..."));
+      setTimeout(() => {
+        App.hideLoading();
+        const res = App.register(d);
+        if (!res.ok) { errEl.textContent = res.msg; errEl.classList.remove("hidden"); return; }
+        App.showToast(I18n.t("会員登録が完了しました！", "Your account has been created!"), "success");
+        setTimeout(() => I18n.go("mypage.html"), 600);
+      }, App.loadingDelay());
+    }
+  </script>
+</body>
+</html>

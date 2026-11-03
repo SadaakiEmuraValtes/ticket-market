@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>イベントを探す | TicketMarket Demo</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <script src="data/master.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/layout.js"></script>
+
+  <div class="page-wrap">
+    <div class="page-title" data-i18n-en="🔍 Find Events">🔍 イベントを探す</div>
+    <div class="page-subtitle" data-i18n-en="Search and browse events without logging in">ゲスト（未ログイン）でも検索・詳細閲覧ができます</div>
+
+    <!-- 検索モード切替タブ -->
+    <div class="mode-tabs" id="mode-tabs">
+      <button class="mode-tab" id="tab-mode-genredate" data-mode="genredate" onclick="switchMode('genredate')" data-i18n-en="📅 Genre & Date">📅 ジャンル・日付で探す</button>
+      <button class="mode-tab" id="tab-mode-genre" data-mode="genre" onclick="switchMode('genre')" data-i18n-en="🎟 Genre">🎟 ジャンルで探す</button>
+      <button class="mode-tab" id="tab-mode-keyword" data-mode="keyword" onclick="switchMode('keyword')" data-i18n-en="🔤 Keyword">🔤 キーワードで探す</button>
+    </div>
+
+    <!-- ① ジャンル・日付 -->
+    <div class="mode-panel hidden" id="panel-genredate">
+      <div class="form-row">
+        <div class="form-group" style="min-width:170px;flex:1">
+          <label for="sd-genre" data-i18n-en="Genre">ジャンル</label>
+          <select id="sd-genre"><option value="all" data-i18n-en="All Genres">すべてのジャンル</option></select>
+        </div>
+        <div class="form-group" style="min-width:150px;flex:1">
+          <label for="sd-area" data-i18n-en="Area">エリア</label>
+          <select id="sd-area"><option value="all" data-i18n-en="All Areas">すべてのエリア</option></select>
+        </div>
+        <div class="form-group" id="g-sd-from" style="min-width:170px;flex:1">
+          <label for="sd-from" data-i18n-en="Date (from)">開催日（から）</label>
+          <div class="date-input-wrap">
+            <input type="text" id="sd-from" placeholder="yyyy/mm/dd" maxlength="10" oninput="autoFormatDate(this)">
+            <div class="dp-btn" id="sd-from-cal-btn" onclick="openDatePicker('sd-from')">📅</div>
+          </div>
+          <span class="error-msg" data-i18n-en="Invalid date">日付の形式が正しくありません</span>
+        </div>
+        <div class="form-group" id="g-sd-to" style="min-width:170px;flex:1">
+          <label for="sd-to" data-i18n-en="Date (to)">開催日（まで）</label>
+          <div class="date-input-wrap">
+            <input type="text" id="sd-to" placeholder="yyyy/mm/dd" maxlength="10" oninput="autoFormatDate(this)">
+            <div class="dp-btn" id="sd-to-cal-btn" onclick="openDatePicker('sd-to')">📅</div>
+          </div>
+          <span class="error-msg" id="sd-to-error" data-i18n-en="Must be on or after the start date">開催日（から）以降を指定してください</span>
+        </div>
+        <button id="btn-search-genredate" class="btn btn-primary" onclick="runSearch(true)" data-i18n-en="🔍 Search">🔍 検索</button>
+      </div>
+      <div class="chips" style="margin-top:12px" id="quick-dates">
+        <span class="muted" style="align-self:center" data-i18n-en="Quick:">日付指定：</span>
+        <button class="chip" id="quick-today" onclick="quickDate('today')" data-i18n-en="Today">今日</button>
+        <button class="chip" id="quick-tomorrow" onclick="quickDate('tomorrow')" data-i18n-en="Tomorrow">明日</button>
+        <button class="chip" id="quick-weekend" onclick="quickDate('weekend')" data-i18n-en="This weekend">今週末</button>
+        <button class="chip" id="quick-nextweekend" onclick="quickDate('nextweekend')" data-i18n-en="Next weekend">来週末</button>
+        <button class="chip" id="quick-30days" onclick="quickDate('30days')" data-i18n-en="Within 30 days">30日以内</button>
+        <button class="chip" id="quick-clear" onclick="quickDate('clear')" data-i18n-en="Clear dates">日付クリア</button>
+      </div>
+    </div>
+
+    <!-- ② ジャンルのみ -->
+    <div class="mode-panel hidden" id="panel-genre">
+      <div class="genre-tiles" id="sg-genre-tiles"></div>
+      <div class="chips" id="sg-sub-chips" style="margin-top:14px"></div>
+    </div>
+
+    <!-- ③ キーワード -->
+    <div class="mode-panel hidden" id="panel-keyword">
+      <div class="form-row">
+        <div class="form-group flex-1" id="g-sk-keyword" style="min-width:240px">
+          <label for="sk-keyword" data-i18n-en="Keyword (event name, performer, venue — separate multiple words with spaces)">キーワード（イベント名・出演者・会場など。スペース区切りでAND検索）</label>
+          <input type="text" id="sk-keyword" placeholder="例：バルテス 東京" data-i18n-ph-en="e.g. Valtes Tokyo" onkeydown="if(event.key==='Enter')runSearch(true)">
+          <span class="error-msg" data-i18n-en="Please enter a keyword">キーワードを入力してください</span>
+        </div>
+        <button id="btn-search-keyword" class="btn btn-primary" onclick="runSearch(true)" data-i18n-en="🔍 Search">🔍 検索</button>
+      </div>
+      <div class="chips" style="margin-top:12px" id="keyword-suggest">
+        <span class="muted" style="align-self:center" data-i18n-en="Popular:">よく検索されるキーワード：</span>
+      </div>
+    </div>
+
+    <!-- フィルター・ソートバー -->
+    <div class="filter-bar" id="filter-bar">
+      <label for="filt-status" data-i18n-en="Status:">販売状況：</label>
+      <select id="filt-status" onchange="applyFilters()">
+        <option value="all" data-i18n-en="All">すべて</option>
+        <option value="available" data-i18n-en="Available now (on sale / lottery)">受付中のみ（発売中・抽選）</option>
+        <option value="onsale" data-i18n-en="On sale">発売中</option>
+        <option value="lottery" data-i18n-en="Lottery open">抽選受付中</option>
+        <option value="before" data-i18n-en="Coming soon">発売前</option>
+        <option value="soldout" data-i18n-en="Sold out">予定枚数終了</option>
+      </select>
+      <label for="filt-sort" data-i18n-en="Sort:">並び順：</label>
+      <select id="filt-sort" onchange="applyFilters()">
+        <option value="date_asc" data-i18n-en="Date: soonest">開催日が近い順</option>
+        <option value="date_desc" data-i18n-en="Date: latest">開催日が遠い順</option>
+        <option value="price_asc" data-i18n-en="Price: low to high">料金が安い順</option>
+        <option value="price_desc" data-i18n-en="Price: high to low">料金が高い順</option>
+        <option value="popular" data-i18n-en="Popularity">人気順</option>
+      </select>
+      <select id="view-mode" onchange="switchView(this.value)">
+        <option value="grid" data-i18n-en="🔲 Grid">🔲 グリッド</option>
+        <option value="list" data-i18n-en="📋 List">📋 リスト</option>
+      </select>
+      <span class="result-count" id="result-count"></span>
+    </div>
+    <div class="active-conditions" id="active-conditions"></div>
+
+    <!-- 検索結果 -->
+    <div id="event-results"></div>
+    <div id="no-result" class="alert alert-info hidden" data-i18n-en="No events matched your criteria. Please change the conditions.">条件に一致するイベントが見つかりませんでした。条件を変更してください。</div>
+    <div id="loading-sentinel" class="load-more-sentinel"></div>
+    <div id="no-more" class="text-center hidden" style="padding:20px;color:var(--gray);font-size:13px" data-i18n-en="─ All results displayed ─">─ 以上で全件表示しました ─</div>
+  </div>
+
+  <script>
+    const PAGE_SIZE = 6;
+    let mode = "genredate";
+    let genreSel = "all", subSel = "";
+    let allResults = [], filteredResults = [], displayedCount = 0, currentView = "grid";
+
+    document.addEventListener("DOMContentLoaded", () => {
+      buildPage({ title: I18n.t("イベントを探す", "Find Events"), activePage: "search" });
+      initForms();
+      restoreParams();
+      switchMode(mode, true);
+      initInfiniteScroll();
+    });
+
+    function initForms() {
+      GENRES.forEach(g => document.getElementById("sd-genre").insertAdjacentHTML("beforeend", `<option value="${g.id}">${g.emoji} ${App.genreName(g.id)}</option>`));
+      AREAS.forEach(a => document.getElementById("sd-area").insertAdjacentHTML("beforeend", `<option value="${a.id}">${App.areaName(a.id)}</option>`));
+      ["バルテス", "ミュージカル", "東京", "大阪", "即売会", "野球", "抽選"].forEach(w => {
+        document.getElementById("keyword-suggest").insertAdjacentHTML("beforeend",
+          `<button class="chip" id="suggest-${w}" onclick="suggest('${w}')">${w}</button>`);
+      });
+    }
+
+    // URLパラメータ優先 → 保存済み検索条件
+    function restoreParams() {
+      const q = new URLSearchParams(window.location.search);
+      const sp = q.has("mode") ? Object.fromEntries(q.entries()) : App.loadSearchParams();
+      mode = ["genredate", "genre", "keyword"].includes(sp.mode) ? sp.mode : "genredate";
+      document.getElementById("sd-genre").value = sp.genre && mode === "genredate" ? sp.genre : "all";
+      document.getElementById("sd-area").value  = sp.area || "all";
+      document.getElementById("sd-from").value  = App.fmtDateSlash(sp.from || "");
+      document.getElementById("sd-to").value    = App.fmtDateSlash(sp.to || "");
+      document.getElementById("sk-keyword").value = sp.keyword || "";
+      if (mode === "genre") { genreSel = sp.genre || "all"; subSel = sp.sub || ""; }
+    }
+
+    function switchMode(m, initial = false) {
+      mode = m;
+      document.querySelectorAll(".mode-tab").forEach(t => t.classList.toggle("active", t.dataset.mode === m));
+      ["genredate", "genre", "keyword"].forEach(k => document.getElementById("panel-" + k).classList.toggle("hidden", k !== m));
+      if (m === "genre") renderGenreTiles();
+      if (m === "keyword" && !initial) document.getElementById("sk-keyword").focus();
+      // キーワードモードで未入力の場合は結果をクリアしたまま表示
+      if (m === "keyword" && !document.getElementById("sk-keyword").value.trim()) { allResults = []; applyFilters(true); return; }
+      runSearch(false, true);
+    }
+
+    // ── ジャンルのみモード ──
+    function renderGenreTiles() {
+      const tiles = [{ id: "all", emoji: "🎫", color: "#475569" }, ...GENRES];
+      document.getElementById("sg-genre-tiles").style.gridTemplateColumns = "repeat(auto-fill,minmax(150px,1fr))";
+      document.getElementById("sg-genre-tiles").innerHTML = tiles.map(g => {
+        const count = g.id === "all" ? EVENTS.length : EVENTS.filter(e => e.genre === g.id).length;
+        return `<div class="genre-tile${genreSel === g.id ? " active" : ""}" id="sg-genre-${g.id}" data-genre="${g.id}" style="background-color:${g.color}" onclick="selectGenre('${g.id}')">
+                  <span class="gt-emoji">${g.emoji}</span>${g.id === "all" ? I18n.t("すべて", "All") : App.genreName(g.id)}
+                  <span class="gt-count">${I18n.t(`${count}件`, `${count} events`)}</span></div>`;
+      }).join("");
+      const g = App.getGenre(genreSel);
+      document.getElementById("sg-sub-chips").innerHTML = g
+        ? `<button class="chip${subSel === "" ? " active" : ""}" id="sg-sub-all" onclick="selectSub('')">${I18n.t("すべて", "All")}</button>` +
+          g.subs.map(s => `<button class="chip${subSel === s ? " active" : ""}" id="sg-sub-${App.idSafe(s)}" data-sub="${s}" onclick="selectSub('${s}')">${App.subName(s)}</button>`).join("")
+        : "";
+    }
+    function selectGenre(id) { genreSel = id; subSel = ""; renderGenreTiles(); runSearch(false); }
+    function selectSub(s) { subSel = s; renderGenreTiles(); runSearch(false); }
+
+    // ── 日付クイック指定 ──
+    function quickDate(kind) {
+      const t = App.today(), d = n => { const x = new Date(t); x.setDate(t.getDate() + n); return App.fmtDate(x); };
+      const dow = t.getDay();
+      let from = "", to = "";
+      if (kind === "today") { from = to = d(0); }
+      if (kind === "tomorrow") { from = to = d(1); }
+      if (kind === "weekend") { from = dow === 0 ? d(0) : d(6 - dow); to = dow === 0 ? d(0) : d(7 - dow); }
+      if (kind === "nextweekend") { const s = (dow === 0 ? 6 : 6 - dow + 7); from = d(s); to = d(s + 1); }
+      if (kind === "30days") { from = d(0); to = d(30); }
+      document.getElementById("sd-from").value = App.fmtDateSlash(from);
+      document.getElementById("sd-to").value = App.fmtDateSlash(to);
+      runSearch(false);
+    }
+
+    function suggest(w) { document.getElementById("sk-keyword").value = w; runSearch(true); }
+
+    // ── 検索実行 ──
+    function collectParams() {
+      if (mode === "genredate") {
+        return { mode, genre: document.getElementById("sd-genre").value, area: document.getElementById("sd-area").value,
+                 fromRaw: document.getElementById("sd-from").value.trim(), toRaw: document.getElementById("sd-to").value.trim() };
+      }
+      if (mode === "genre") return { mode, genre: genreSel, sub: subSel };
+      return { mode, keyword: document.getElementById("sk-keyword").value.trim() };
+    }
+
+    function validate(p) {
+      document.querySelectorAll(".has-error").forEach(el => el.classList.remove("has-error"));
+      if (p.mode === "genredate") {
+        p.from = App.parseDateStr(p.fromRaw); p.to = App.parseDateStr(p.toRaw);
+        if (p.fromRaw && !p.from) { document.getElementById("g-sd-from").classList.add("has-error"); return false; }
+        if (p.toRaw && !p.to) { document.getElementById("sd-to-error").textContent = I18n.t("日付の形式が正しくありません", "Invalid date"); document.getElementById("g-sd-to").classList.add("has-error"); return false; }
+        if (p.from && p.to && p.from > p.to) { document.getElementById("sd-to-error").textContent = I18n.t("開催日（から）以降を指定してください", "Must be on or after the start date"); document.getElementById("g-sd-to").classList.add("has-error"); return false; }
+      }
+      if (p.mode === "keyword" && !p.keyword) { document.getElementById("g-sk-keyword").classList.add("has-error"); return false; }
+      return true;
+    }
+
+    function runSearch(withLoading, silent = false) {
+      const p = collectParams();
+      if (!validate(p)) { if (silent) { allResults = []; applyFilters(true); } return; }
+      const exec = () => {
+        const saved = { mode: p.mode, genre: p.genre, sub: p.sub, area: p.area, from: p.from, to: p.to, keyword: p.keyword };
+        App.saveSearchParams(saved);
+        allResults = App.searchEvents(saved);
+        renderConditions(saved);
+        applyFilters();
+      };
+      if (withLoading) {
+        App.showLoading(I18n.t("イベントを検索中...", "Searching events..."));
+        setTimeout(() => { App.hideLoading(); exec(); }, App.loadingDelay());
+      } else exec();
+    }
+
+    function renderConditions(p) {
+      const parts = [];
+      if (p.mode === "genredate" || p.mode === "genre") parts.push(I18n.t("ジャンル：", "Genre: ") + (p.genre && p.genre !== "all" ? App.genreName(p.genre) : I18n.t("すべて", "All")));
+      if (p.sub) parts.push(I18n.t("サブジャンル：", "Sub-genre: ") + App.subName(p.sub));
+      if (p.mode === "genredate") {
+        parts.push(I18n.t("エリア：", "Area: ") + (p.area && p.area !== "all" ? App.areaName(p.area) : I18n.t("すべて", "All")));
+        if (p.from || p.to) parts.push(I18n.t("開催日：", "Date: ") + `${p.from ? App.fmtDateSlash(p.from) : ""} 〜 ${p.to ? App.fmtDateSlash(p.to) : ""}`);
+      }
+      if (p.mode === "keyword") parts.push(I18n.t("キーワード：", "Keyword: ") + `「${p.keyword}」`);
+      document.getElementById("active-conditions").textContent = I18n.t("検索条件 ▶ ", "Conditions ▶ ") + parts.join(" ／ ");
+    }
+
+    function applyFilters(cleared = false) {
+      const status = document.getElementById("filt-status").value;
+      const sort = document.getElementById("filt-sort").value;
+      if (cleared) document.getElementById("active-conditions").textContent = "";
+      filteredResults = allResults.filter(e => {
+        const st = App.salesStatus(e).key;
+        if (status === "all") return true;
+        if (status === "available") return ["onsale", "few", "lottery"].includes(st);
+        if (status === "onsale") return ["onsale", "few"].includes(st);
+        return st === status;
+      });
+      const by = {
+        date_asc:   (a, b) => App.nextDate(a).localeCompare(App.nextDate(b)) || b.popularity - a.popularity,
+        date_desc:  (a, b) => App.nextDate(b).localeCompare(App.nextDate(a)) || b.popularity - a.popularity,
+        price_asc:  (a, b) => App.minPrice(a) - App.minPrice(b),
+        price_desc: (a, b) => App.minPrice(b) - App.minPrice(a),
+        popular:    (a, b) => b.popularity - a.popularity,
+      };
+      filteredResults.sort(by[sort]);
+
+      document.getElementById("result-count").textContent = I18n.t(`${filteredResults.length}件`, `${filteredResults.length} events`);
+      document.getElementById("event-results").innerHTML = "";
+      document.getElementById("event-results").className = currentView === "grid" ? "event-grid" : "event-list";
+      document.getElementById("no-more").classList.add("hidden");
+      document.getElementById("no-result").classList.toggle("hidden", filteredResults.length > 0 || (cleared && mode === "keyword"));
+      displayedCount = 0;
+      loadMore();
+    }
+
+    function switchView(v) { currentView = v; applyFilters(); }
+
+    function loadMore() {
+      const next = filteredResults.slice(displayedCount, displayedCount + PAGE_SIZE);
+      const box = document.getElementById("event-results");
+      next.forEach(e => box.insertAdjacentHTML("beforeend", eventCardHtml(e, { mode: currentView })));
+      displayedCount += next.length;
+      if (displayedCount > 0 && displayedCount >= filteredResults.length) { document.getElementById("no-more").classList.remove("hidden"); return; }
+      // 画面に余白がありセンチネルが見えたままの場合は続けて読み込む
+      requestAnimationFrame(() => {
+        if (document.getElementById("loading-sentinel").getBoundingClientRect().top < window.innerHeight && displayedCount < filteredResults.length) loadMore();
+      });
+    }
+
+    function initInfiniteScroll() {
+      new IntersectionObserver(entries => {
+        if (entries[0].isIntersecting && displayedCount < filteredResults.length) loadMore();
+      }, { threshold: 0.1 }).observe(document.getElementById("loading-sentinel"));
+    }
+  </script>
+</body>
+</html>

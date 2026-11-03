@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>購入手続き | TicketMarket Demo</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <script src="data/master.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/layout.js"></script>
+
+  <div class="page-wrap" style="max-width:1040px">
+    <div class="step-bar">
+      <div class="step-item done" id="step0-tab" data-i18n-en="① Select Tickets">① チケット選択</div>
+      <div class="step-item active" id="step1-tab" data-i18n-en="② Buyer & Payment">② 購入者情報・支払方法</div>
+      <div class="step-item" id="step2-tab" data-i18n-en="③ Confirm">③ 内容確認</div>
+      <div class="step-item" id="step3-tab" data-i18n-en="④ Complete">④ 完了</div>
+    </div>
+
+    <!-- STEP 1 : 購入者情報・受取・支払 -->
+    <div id="step1">
+      <div class="two-col-main">
+        <div>
+          <div class="form-section mb-16">
+            <h3 data-i18n-en="🎫 Selected Tickets">🎫 選択中のチケット</h3>
+            <div id="cart-summary"></div>
+          </div>
+
+          <div class="form-section mb-16">
+            <h3 data-i18n-en="👤 Buyer Information">👤 購入者情報</h3>
+            <div class="form-grid-2">
+              <div class="form-group" id="g-name">
+                <label for="p-name"><span data-i18n-en="Full Name">氏名</span><span class="req">*</span></label>
+                <input type="text" id="p-name" placeholder="山田 太郎" data-i18n-ph-en="Full name">
+                <span class="error-msg" data-i18n-en="Required">必須項目です</span>
+              </div>
+              <div class="form-group" id="g-kana">
+                <label for="p-kana"><span data-i18n-en="Name (Katakana)">氏名（フリガナ）</span><span class="req">*</span></label>
+                <input type="text" id="p-kana" placeholder="ヤマダ タロウ">
+                <span class="error-msg" data-i18n-en="Please enter in full-width katakana">全角カタカナで入力してください</span>
+              </div>
+              <div class="form-group" id="g-phone">
+                <label for="p-phone"><span data-i18n-en="Phone">電話番号</span><span class="req">*</span></label>
+                <input type="tel" id="p-phone" placeholder="090-1234-5678">
+                <span class="error-msg" data-i18n-en="Format: 090-1234-5678">090-1234-5678 の形式で入力してください</span>
+              </div>
+              <div class="form-group" id="g-email">
+                <label for="p-email"><span data-i18n-en="Email">メールアドレス</span><span class="req">*</span></label>
+                <input type="email" id="p-email" placeholder="user@example.com">
+                <span class="error-msg" data-i18n-en="Please enter a valid email address">正しいメールアドレスを入力してください</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section mb-16">
+            <h3 data-i18n-en="📦 Ticket Pickup Method">📦 受取方法</h3>
+            <div class="radio-cards" id="receive-list"></div>
+            <div id="delivery-fields" class="form-grid-2 mt-16 hidden">
+              <div class="form-group" id="g-postal">
+                <label for="p-postal"><span data-i18n-en="Postal Code">郵便番号</span><span class="req">*</span></label>
+                <input type="text" id="p-postal" placeholder="123-4567" maxlength="8">
+                <span class="error-msg" data-i18n-en="Format: 123-4567">123-4567 の形式で入力してください</span>
+              </div>
+              <div class="form-group" id="g-address" style="grid-column:1/-1">
+                <label for="p-address"><span data-i18n-en="Address">住所</span><span class="req">*</span></label>
+                <input type="text" id="p-address" placeholder="東京都千代田区…">
+                <span class="error-msg" data-i18n-en="Required">必須項目です</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section mb-16">
+            <h3 data-i18n-en="💳 Payment Method">💳 支払方法</h3>
+            <div id="lottery-pay-note" class="alert alert-info hidden" data-i18n-en="For lottery entries, payment is made only if you win.">抽選申込の場合、当選時のみ決済されます。</div>
+            <div class="radio-cards" id="payment-list"></div>
+          </div>
+
+          <div class="form-section mb-16" id="agree-section">
+            <h3 data-i18n-en="✅ Agreement">✅ 同意事項</h3>
+            <label class="check-line mb-8" id="g-agree-terms"><input type="checkbox" id="agree-terms" onchange="updateFees()">
+              <span data-i18n-en="I agree to the Terms of Use and the event notes.">利用規約およびイベントの注意事項に同意します</span></label>
+            <label class="check-line" id="g-agree-resale"><input type="checkbox" id="agree-resale" onchange="updateFees()">
+              <span data-i18n-en="I understand that unauthorized resale of tickets is prohibited.">チケットの不正転売が禁止されていることを理解しました</span></label>
+          </div>
+
+          <div id="err-step1" class="alert alert-danger hidden"></div>
+          <div style="display:flex;gap:12px;justify-content:space-between;flex-wrap:wrap">
+            <button id="btn-back-select" class="btn btn-secondary" onclick="backToSelect()" data-i18n-en="← Back to Ticket Selection">← チケット選択に戻る</button>
+            <button id="btn-confirm" class="btn btn-primary btn-lg" onclick="goToStep2()" data-i18n-en="Review Order →">確認画面へ進む →</button>
+          </div>
+        </div>
+
+        <!-- 料金サマリー -->
+        <div class="buy-box" id="fee-box">
+          <div style="font-weight:700;color:var(--accent);margin-bottom:8px" data-i18n-en="Price Summary">お支払い金額</div>
+          <div class="price-summary" id="fee-summary"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2 : 内容確認 -->
+    <div id="step2" class="hidden">
+      <div class="form-section mb-16">
+        <h3 id="confirm-heading" data-i18n-en="✅ Please Confirm Your Order">✅ ご購入内容の確認</h3>
+        <table class="confirm-table" id="confirm-table"></table>
+      </div>
+      <div id="err-step2" class="alert alert-danger hidden"></div>
+      <div style="display:flex;gap:12px;justify-content:space-between;flex-wrap:wrap">
+        <button id="btn-back" class="btn btn-secondary" onclick="backToStep1()" data-i18n-en="← Edit">← 入力内容を修正する</button>
+        <button id="btn-complete" class="btn btn-success btn-lg" onclick="completeOrder()"></button>
+      </div>
+    </div>
+
+    <!-- STEP 3 : 完了 -->
+    <div id="step3" class="hidden">
+      <div class="form-section" style="text-align:center;padding:36px 28px">
+        <div style="font-size:60px;margin-bottom:10px" id="complete-icon">🎉</div>
+        <h2 style="font-size:24px;color:var(--success);margin-bottom:8px" id="complete-title"></h2>
+        <p class="muted" style="font-size:14px" id="complete-message"></p>
+        <div class="order-no-box">
+          <div class="label" id="complete-no-label"></div>
+          <div class="number" id="complete-no"></div>
+        </div>
+        <div id="complete-summary" style="text-align:left;margin:18px 0"></div>
+        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+          <a href="mypage.html?tab=orders" id="link-mypage-orders" class="btn btn-primary" data-i18n-en="View Purchased Tickets">購入チケットを確認する</a>
+          <a href="index.html" id="link-home" class="btn btn-secondary" data-i18n-en="Back to Home">トップに戻る</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let cart = null, ev = null, perf = null, seat = null, form = {};
+
+    document.addEventListener("DOMContentLoaded", () => {
+      buildPage({ title: I18n.t("購入手続き", "Checkout") });
+      if (!App.requireLogin()) return;
+
+      cart = App.loadCart();
+      ev = cart && App.getEvent(cart.eventId);
+      perf = ev && App.getPerf(ev, cart.perfId);
+      seat = ev && App.getSeat(ev, cart.seatKey);
+      if (!ev || !perf || !seat) { I18n.go("search.html"); return; }
+
+      const lottery = ev.saleType === "lottery";
+      if (lottery) {
+        document.getElementById("lottery-pay-note").classList.remove("hidden");
+        document.title = I18n.t("抽選申込 | TicketMarket Demo", "Lottery Entry | TicketMarket Demo");
+      }
+      document.getElementById("btn-complete").textContent = lottery ? I18n.t("抽選に申し込む ✔", "Submit Lottery Entry ✔") : I18n.t("購入を確定する ✔", "Confirm Purchase ✔");
+
+      renderCartSummary();
+      renderRadios();
+      prefill();
+      updateFees();
+    });
+
+    function renderCartSummary() {
+      document.getElementById("cart-summary").innerHTML = `
+        <div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap">
+          <div style="font-size:38px;background:${App.genreColor(ev.genre)};border-radius:10px;width:64px;height:64px;display:flex;align-items:center;justify-content:center">${App.genreEmoji(ev.genre)}</div>
+          <div style="flex:1;min-width:200px">
+            <div style="font-size:16px;font-weight:700" id="cart-event">${ev.title}</div>
+            <div class="muted" id="cart-date">📅 ${App.fmtDateJP(perf.date)} ${I18n.t("開場", "Doors")} ${perf.open} ／ ${I18n.t("開演", "Start")} ${perf.start}</div>
+            <div class="muted" id="cart-venue">📍 ${App.venueName(perf.venue)}</div>
+            <div style="margin-top:6px"><span class="badge badge-primary" id="cart-seat">${seat.name}</span></div>
+            <table class="data-table mt-8" id="cart-items">
+              ${cart.items.map(i => `<tr data-type="${i.typeKey}"><td>${App.typeName(i.typeKey)}</td><td class="num">${i.price === 0 ? I18n.t("無料", "Free") : App.fmtPrice(i.price)}</td><td class="num">× ${i.qty}</td><td class="num"><strong>${App.fmtPrice(i.price * i.qty)}</strong></td></tr>`).join("")}
+            </table>
+          </div>
+        </div>`;
+    }
+
+    function renderRadios() {
+      const u = App.currentUser();
+      const days = App.daysUntil(perf.date);
+      document.getElementById("receive-list").innerHTML = RECEIVE_METHODS.map((r, i) => {
+        const disabled = r.minDays && days < r.minDays;
+        const fee = r.feePerTicket ? I18n.t(`手数料 ${App.fmtPrice(r.feePerTicket)}/枚`, `${App.fmtPrice(r.feePerTicket)}/ticket`)
+                  : r.feePerOrder ? I18n.t(`送料 ${App.fmtPrice(r.feePerOrder)}`, `Shipping ${App.fmtPrice(r.feePerOrder)}`) : I18n.t("手数料無料", "No fee");
+        return `<label class="radio-card${disabled ? " disabled" : ""}${i === 0 ? " selected" : ""}" id="rc-receive-${r.key}">
+          <input type="radio" name="receive" id="receive-${r.key}" value="${r.key}" ${disabled ? "disabled" : ""} ${i === 0 ? "checked" : ""} onchange="onRadio()">
+          <span>${I18n.t(r.name, r.en)}${disabled ? `<span class="rc-note">${I18n.t(`公演日まで${r.minDays}日未満のため選択できません`, `Unavailable within ${r.minDays} days of the performance`)}</span>` : ""}</span>
+          <span class="rc-fee">${fee}</span></label>`;
+      }).join("");
+
+      document.getElementById("payment-list").innerHTML = PAYMENT_METHODS.map(m => {
+        let note = "", disabled = false;
+        if (m.key === "credit" && !u.card) { disabled = true; note = I18n.t("登録済みのカードがありません", "No registered card"); }
+        if (m.key === "konbini" && days < 3) { disabled = true; note = I18n.t("公演3日前を過ぎているため選択できません", "Unavailable within 3 days of the performance"); }
+        const detail = m.key === "credit" && u.card ? `<span class="muted" id="registered-card"> （**** **** **** ${u.card}）</span>` : "";
+        return `<label class="radio-card${disabled ? " disabled" : ""}" id="rc-payment-${m.key}">
+          <input type="radio" name="payment" id="payment-${m.key}" value="${m.key}" ${disabled ? "disabled" : ""} onchange="onRadio()">
+          <span>${I18n.t(m.name, m.en)}${detail}${note ? `<span class="rc-note">${note}</span>` : ""}</span>
+          <span class="rc-fee">${m.fee ? I18n.t(`手数料 ${App.fmtPrice(m.fee)}`, `Fee ${App.fmtPrice(m.fee)}`) : I18n.t("手数料無料", "No fee")}</span></label>`;
+      }).join("");
+      // 選択可能な最初の支払方法を初期選択
+      const firstPay = document.querySelector('input[name="payment"]:not(:disabled)');
+      if (firstPay) firstPay.checked = true;
+      onRadio();
+    }
+
+    function onRadio() {
+      document.querySelectorAll(".radio-card").forEach(c => c.classList.toggle("selected", !!c.querySelector("input:checked")));
+      const receive = document.querySelector('input[name="receive"]:checked')?.value;
+      document.getElementById("delivery-fields").classList.toggle("hidden", receive !== "delivery");
+      updateFees();
+    }
+
+    function prefill() {
+      const u = App.currentUser();
+      document.getElementById("p-name").value = u.name || "";
+      document.getElementById("p-kana").value = u.kana || "";
+      document.getElementById("p-phone").value = u.phone || "";
+      document.getElementById("p-email").value = u.email || "";
+      document.getElementById("p-postal").value = u.postal || "";
+      document.getElementById("p-address").value = u.address || "";
+    }
+
+    function selected() {
+      return {
+        receive: document.querySelector('input[name="receive"]:checked')?.value || "",
+        payment: document.querySelector('input[name="payment"]:checked')?.value || "",
+      };
+    }
+
+    function feeRows(f) {
+      return [
+        ["subtotal", I18n.t("チケット代金", "Tickets"), f.subtotal],
+        ["system",   I18n.t(`システム利用料（${f.paidQty}枚）`, `System fee (${f.paidQty})`), f.system],
+        ["issue",    I18n.t("発券手数料", "Issuing fee"), f.issue],
+        ["delivery", I18n.t("配送料", "Shipping"), f.delivery],
+        ["payment",  I18n.t("決済手数料", "Payment fee"), f.payment],
+      ];
+    }
+
+    function updateFees() {
+      const { receive, payment } = selected();
+      const f = App.calcFees(cart.items, receive, payment);
+      document.getElementById("fee-summary").innerHTML =
+        feeRows(f).map(([k, label, v]) => `<div class="ps-row" id="fee-row-${k}"><span>${label}</span><span id="fee-${k}">${App.fmtPrice(v)}</span></div>`).join("") +
+        `<div class="ps-total"><span>${I18n.t("合計", "Total")}</span><span id="fee-total">${App.fmtPrice(f.total)}</span></div>`;
+      return f;
+    }
+
+    function goToStep2() {
+      const v = id => document.getElementById(id).value.trim();
+      const { receive, payment } = selected();
+      form = { name: v("p-name"), kana: v("p-kana"), phone: v("p-phone"), email: v("p-email"), postal: v("p-postal"), address: v("p-address"), receive, payment };
+
+      const checks = [
+        ["g-name",  !!form.name],
+        ["g-kana",  /^[ァ-ヶー　 ]+$/.test(form.kana)],
+        ["g-phone", /^0\d{1,4}-\d{1,4}-\d{3,4}$/.test(form.phone)],
+        ["g-email", /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)],
+      ];
+      if (receive === "delivery") checks.push(["g-postal", /^\d{3}-\d{4}$/.test(form.postal)], ["g-address", !!form.address]);
+      let ok = true;
+      ["g-name", "g-kana", "g-phone", "g-email", "g-postal", "g-address"].forEach(id => document.getElementById(id).classList.remove("has-error"));
+      checks.forEach(([id, valid]) => { if (!valid) { document.getElementById(id).classList.add("has-error"); ok = false; } });
+
+      const errs = [];
+      if (!ok) errs.push(I18n.t("入力内容に誤りがあります。赤枠の項目をご確認ください。", "Please correct the highlighted fields."));
+      if (!receive) errs.push(I18n.t("受取方法を選択してください。", "Please select a pickup method."));
+      if (!payment) errs.push(I18n.t("支払方法を選択してください。", "Please select a payment method."));
+      if (!document.getElementById("agree-terms").checked) errs.push(I18n.t("利用規約・注意事項への同意が必要です。", "You must agree to the Terms of Use."));
+      if (!document.getElementById("agree-resale").checked) errs.push(I18n.t("不正転売禁止への同意が必要です。", "You must acknowledge the resale prohibition."));
+      const errEl = document.getElementById("err-step1");
+      if (errs.length) { errEl.innerHTML = errs.join("<br>"); errEl.classList.remove("hidden"); window.scrollTo(0, document.body.scrollHeight); return; }
+      errEl.classList.add("hidden");
+
+      renderConfirm();
+      showStep(2);
+    }
+
+    function renderConfirm() {
+      const f = App.calcFees(cart.items, form.receive, form.payment);
+      const rc = RECEIVE_METHODS.find(r => r.key === form.receive), pm = PAYMENT_METHODS.find(m => m.key === form.payment);
+      const lottery = ev.saleType === "lottery";
+      const rows = [
+        ["event",    I18n.t("イベント", "Event"), ev.title],
+        ["date",     I18n.t("公演日時", "Date & time"), `${App.fmtDateJP(perf.date)} ${I18n.t("開場", "Doors")} ${perf.open} ／ ${I18n.t("開演", "Start")} ${perf.start}`],
+        ["venue",    I18n.t("会場", "Venue"), App.venueName(perf.venue)],
+        ["seat",     I18n.t("席種", "Seat"), seat.name],
+        ["tickets",  I18n.t("券種・枚数", "Tickets"), cart.items.map(i => `${App.typeName(i.typeKey)} ${App.fmtPrice(i.price)} × ${i.qty}`).join("<br>")],
+        ["qty",      I18n.t("合計枚数", "Quantity"), I18n.t(`${f.qty}枚`, `${f.qty}`)],
+        ["buyer-name", I18n.t("購入者氏名", "Buyer"), `${form.name}（${form.kana}）`],
+        ["phone",    I18n.t("電話番号", "Phone"), form.phone],
+        ["email",    I18n.t("メールアドレス", "Email"), form.email],
+        ["receive",  I18n.t("受取方法", "Pickup"), I18n.t(rc.name, rc.en)],
+        ...(form.receive === "delivery" ? [["address", I18n.t("配送先", "Delivery address"), `〒${form.postal} ${form.address}`]] : []),
+        ["payment",  I18n.t("支払方法", "Payment"), I18n.t(pm.name, pm.en)],
+        ...(lottery ? [["lottery-result", I18n.t("当落発表", "Lottery results"), App.fmtDateJP(App.lotteryResultDate(ev))]] : []),
+        ...feeRows(f).map(([k, label, v]) => [k + "-fee", label, App.fmtPrice(v)]),
+      ];
+      document.getElementById("confirm-table").innerHTML =
+        rows.map(([key, k, val]) => `<tr data-field="${key}"><td>${k}</td><td id="confirm-${key}" class="confirm-value">${val}</td></tr>`).join("") +
+        `<tr class="total-row" data-field="total"><td>${lottery ? I18n.t("合計金額（当選時）", "Total (if won)") : I18n.t("合計金額", "Total")}</td><td id="confirm-total" class="confirm-value">${App.fmtPrice(f.total)}</td></tr>`;
+    }
+
+    function completeOrder() {
+      const btn = document.getElementById("btn-complete");
+      btn.disabled = true;
+      App.showLoading(ev.saleType === "lottery" ? I18n.t("抽選申込を処理中...", "Submitting your entry...") : I18n.t("購入処理中...", "Processing your purchase..."));
+      setTimeout(() => {
+        App.hideLoading();
+        const res = App.createOrder({
+          eventId: ev.id, perfId: perf.id, seatKey: seat.key, items: cart.items, receive: form.receive, payment: form.payment,
+          buyer: { name: form.name, kana: form.kana, phone: form.phone, email: form.email, postal: form.postal, address: form.address },
+        });
+        if (!res.ok) {
+          const el = document.getElementById("err-step2"); el.textContent = res.msg; el.classList.remove("hidden");
+          btn.disabled = false;
+          return;
+        }
+        App.clearCart();
+        renderComplete(res.order);
+        showStep(3);
+      }, App.loadingDelay());
+    }
+
+    function renderComplete(o) {
+      const lottery = o.status === ORDER_STATUS.LOTTERY;
+      const rc = RECEIVE_METHODS.find(r => r.key === o.receive), pm = PAYMENT_METHODS.find(m => m.key === o.payment);
+      document.getElementById("complete-icon").textContent = lottery ? "🎲" : "🎉";
+      document.getElementById("complete-title").textContent = lottery ? I18n.t("抽選申込が完了しました！", "Your lottery entry is complete!") : I18n.t("ご購入ありがとうございます！", "Thank you for your purchase!");
+      document.getElementById("complete-message").textContent = I18n.t("確認メールをお送りしました（デモのため実際には送信されません）", "A confirmation email has been sent (no actual email in this demo).");
+      document.getElementById("complete-no-label").textContent = lottery ? I18n.t("申込番号", "Entry No.") : I18n.t("注文番号", "Order No.");
+      document.getElementById("complete-no").textContent = o.orderNo;
+
+      const payDeadline = new Date(); payDeadline.setDate(payDeadline.getDate() + 2);
+      const rows = [
+        ["event",   I18n.t("イベント", "Event"), o.eventTitle],
+        ["date",    I18n.t("公演日時", "Date & time"), `${App.fmtDateJP(o.date)} ${o.start}`],
+        ["venue",   I18n.t("会場", "Venue"), o.venueName],
+        ["seat",    I18n.t("席種", "Seat"), o.seatName],
+        ["qty",     I18n.t("枚数", "Quantity"), I18n.t(`${o.qty}枚`, `${o.qty}`)],
+        ["receive", I18n.t("受取方法", "Pickup"), I18n.t(rc.name, rc.en)],
+        ["payment", I18n.t("支払方法", "Payment"), I18n.t(pm.name, pm.en)],
+        ["status",  I18n.t("ステータス", "Status"), App.orderStatusLabel(App.orderStatus(o))],
+        ...(lottery ? [["lottery-result", I18n.t("当落発表", "Results"), App.fmtDateJP(o.lotteryResultDate)]] : []),
+        ...(!lottery && o.payment === "konbini" ? [
+          ["pay-no", I18n.t("払込票番号", "Payment No."), String(Math.floor(1e12 + Math.random() * 9e12))],
+          ["pay-deadline", I18n.t("お支払期限", "Payment deadline"), `${App.fmtDateJP(App.fmtDate(payDeadline))} 23:59`],
+        ] : []),
+        ["total",   lottery ? I18n.t("合計金額（当選時）", "Total (if won)") : I18n.t("合計金額", "Total"), App.fmtPrice(o.total)],
+      ];
+      document.getElementById("complete-summary").innerHTML = `<table class="confirm-table">` +
+        rows.map(([k, label, v]) => `<tr data-field="${k}" class="${k === "total" ? "total-row" : ""}"><td>${label}</td><td id="complete-${k}">${v}</td></tr>`).join("") + `</table>`;
+    }
+
+    function showStep(n) {
+      [1, 2, 3].forEach(i => {
+        document.getElementById("step" + i).classList.toggle("hidden", i !== n);
+        document.getElementById(`step${i}-tab`).className = "step-item" + (i < n ? " done" : i === n ? " active" : "");
+      });
+      window.scrollTo(0, 0);
+    }
+
+    function backToStep1() { document.getElementById("err-step2").classList.add("hidden"); showStep(1); }
+    function backToSelect() { I18n.go(`ticket-select.html?eventId=${ev.id}&perfId=${perf.id}`); }
+  </script>
+</body>
+</html>

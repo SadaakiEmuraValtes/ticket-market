@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ヘルプ | TicketMarket Demo</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    .faq-item { border: 1px solid var(--gray-bd); border-radius: 8px; margin-bottom: 10px; overflow: hidden; background: white; }
+    .faq-q { padding: 13px 18px; cursor: pointer; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+    .faq-q:hover { background: var(--light-bg); }
+    .faq-a { padding: 13px 18px; background: var(--gray-lt); font-size: 14px; color: var(--text); line-height: 1.7; display: none; }
+    .faq-item.open .faq-a { display: block; }
+    .faq-item.open .faq-q { background: var(--light-bg); color: var(--primary); }
+    .help-section { margin-bottom: 28px; }
+    code { background: var(--gray-lt); padding: 1px 6px; border-radius: 4px; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <script src="data/master.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/layout.js"></script>
+
+  <div class="page-wrap" style="max-width:960px">
+    <div class="page-title" data-i18n-en="Help &amp; FAQ">ヘルプ・よくある質問</div>
+    <div class="page-subtitle" data-i18n-en="How to use and test the TicketMarket demo site">TicketMarket デモサイトの使い方・テスト方法をご案内します</div>
+
+    <div class="alert alert-warn help-section">
+      ⚠️ <strong data-i18n-en="About This Demo Site">デモサイトについて</strong><br>
+      <span data-i18n-en="This is a fictitious ticketing service created by Valtes Inc. for system testing and demonstrations. All events, performers, organizations, venues and prices are fictional. No actual purchases, payments or personal data registrations are made.">本サイトは株式会社バルテスのシステムテスト・デモ目的で作成された架空のチケット販売サービスです。イベント・出演者・団体・会場・料金はすべてフィクションであり、実際の購入・決済・個人情報の登録は行われません。</span>
+    </div>
+
+    <!-- テストアカウント -->
+    <div class="card help-section">
+      <div class="card-head primary"><h2 style="font-size:17px" id="accounts" data-i18n-en="🧪 Test Accounts">🧪 テストアカウント一覧</h2></div>
+      <div class="card-body table-wrap">
+        <table class="data-table" id="account-table" style="min-width:720px">
+          <thead><tr>
+            <th data-i18n-en="Name">名前</th><th data-i18n-en="Email">メールアドレス</th><th data-i18n-en="Password">パスワード</th>
+            <th data-i18n-en="Card">カード</th><th data-i18n-en="Notes">特徴</th>
+          </tr></thead>
+          <tbody id="account-list"></tbody>
+        </table>
+        <div style="text-align:right;margin-top:12px"><a href="login.html" id="link-login" class="btn btn-primary btn-sm" data-i18n-en="Go to Log In →">ログイン画面へ →</a></div>
+      </div>
+    </div>
+
+    <!-- テスト用イベント -->
+    <div class="card help-section">
+      <div class="card-head"><h2 style="font-size:17px" id="test-events" data-i18n-en="🎫 Valtes Series Events (Test Data)">🎫 バルテスシリーズ（テスト用イベント）</h2></div>
+      <div class="card-body table-wrap">
+        <p class="muted mb-16" style="font-size:13px" data-i18n-en="Events with specific conditions for testing. Performance dates are generated relative to Sunday of the current week, so weekdays stay fixed.">
+          特定の条件を持つテスト用イベントです。公演日は「今週の日曜日」を基準に自動生成されるため、曜日は常に固定です（日付は週ごとに進みます）。
+        </p>
+        <table class="data-table" id="test-event-table" style="min-width:640px">
+          <thead><tr><th data-i18n-en="Event">イベント</th><th data-i18n-en="Genre">ジャンル</th><th data-i18n-en="Test condition">テスト条件</th><th data-i18n-en="Status">販売状況</th></tr></thead>
+          <tbody id="test-event-list"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ご利用ルール -->
+    <div class="card help-section">
+      <div class="card-head" style="background:var(--success)"><h2 style="font-size:17px" id="rules" data-i18n-en="📏 Business Rules">📏 ご利用ルール（ビジネスルール）</h2></div>
+      <div class="card-body">
+        <ol class="notes-list" id="rules-list" style="font-size:14px;line-height:1.9"></ol>
+      </div>
+    </div>
+
+    <!-- 手数料 -->
+    <div class="card help-section">
+      <div class="card-head"><h2 style="font-size:17px" id="fees" data-i18n-en="💴 Fees">💴 手数料一覧</h2></div>
+      <div class="card-body table-wrap">
+        <table class="data-table" id="fee-table">
+          <thead><tr><th data-i18n-en="Item">項目</th><th class="num" data-i18n-en="Fee">手数料</th><th data-i18n-en="Notes">備考</th></tr></thead>
+          <tbody id="fee-list"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- FAQ -->
+    <div class="help-section">
+      <div class="section-title" id="faq" data-i18n-en="❓ FAQ">❓ よくある質問</div>
+      <div id="faq-list"></div>
+    </div>
+
+    <!-- データリセット -->
+    <div class="card help-section">
+      <div class="card-head" style="background:var(--danger)"><h2 style="font-size:17px" id="reset" data-i18n-en="🗑 Reset Demo Data">🗑 デモデータの初期化</h2></div>
+      <div class="card-body">
+        <p style="font-size:14px;margin-bottom:12px" data-i18n-en="Clears purchases, favourites, registered users and the login session stored in this browser, and restores the initial sample data.">
+          このブラウザに保存された購入履歴・お気に入り・新規登録ユーザー・ログイン状態を削除し、初期サンプルデータに戻します。
+        </p>
+        <button id="btn-reset-data" class="btn btn-danger" onclick="resetData()" data-i18n-en="Reset Data">データを初期化する</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      buildPage({ title: I18n.t("ヘルプ", "Help"), activePage: "help" });
+      renderAccounts();
+      renderTestEvents();
+      renderRules();
+      renderFees();
+      renderFaq();
+      if (location.hash) document.querySelector(location.hash)?.scrollIntoView();
+    });
+
+    function renderAccounts() {
+      document.getElementById("account-list").innerHTML = USERS.map(u => `
+        <tr data-user-id="${u.id}">
+          <td class="account-name nowrap">${u.name}</td>
+          <td class="account-email">${u.email}</td>
+          <td class="account-password"><code>${u.password}</code></td>
+          <td class="account-card nowrap">${u.card ? "**** " + u.card : `<span class="badge badge-gray">${I18n.t("未登録", "None")}</span>`}</td>
+          <td class="account-note" style="font-size:12px">${u.note}</td>
+        </tr>`).join("");
+    }
+
+    function renderTestEvents() {
+      const cond = {
+        e001: I18n.t("土曜・日曜開催は全席完売（平日ナイターのみ購入可）", "Weekend games sold out (weekday only)"),
+        e002: I18n.t("VIP席（グッズ付き）が全公演完売", "VIP seats sold out for all shows"),
+        e003: I18n.t("発売前（購入ボタン無効・発売日表示）", "Coming soon (buy disabled)"),
+        e004: I18n.t("抽選販売・1申込2枚まで・子供券のみ不可", "Lottery, max 2, adult required"),
+        e005: I18n.t("1申込2枚まで・キャンセル不可", "Max 2 per order, non-cancellable"),
+        e006: I18n.t("子供券のみ購入不可・最大8枚", "Adult ticket required, max 8"),
+        e007: I18n.t("全公演・全席種完売", "All performances sold out"),
+        e008: I18n.t("全席種残りわずか（残数2〜7枚）", "Few seats left (2-7)"),
+      };
+      document.getElementById("test-event-list").innerHTML = EVENTS.filter(e => e.tags.includes("バルテス")).map(e => {
+        const st = App.salesStatus(e);
+        return `<tr data-event-id="${e.id}">
+          <td><a href="${I18n.urlWith("event.html?id=" + e.id)}" target="_blank" id="help-event-${e.id}" style="font-weight:600">${e.title}</a></td>
+          <td class="nowrap">${App.genreEmoji(e.genre)} ${App.genreName(e.genre)}</td>
+          <td style="font-size:13px">${cond[e.id] || ""}</td>
+          <td><span class="badge ${st.cls}">${st.label}</span></td></tr>`;
+      }).join("");
+    }
+
+    function renderRules() {
+      const rules = [
+        I18n.t("イベントの検索・詳細閲覧はゲスト（未ログイン）でも利用できます", "Searching and viewing events is available to guests"),
+        I18n.t("チケット購入・抽選申込・お気に入り登録にはログインが必要です（未ログイン時はログインモーダルを表示）", "Purchases, lottery entries and favourites require login"),
+        I18n.t("チケットの購入は公演日の前日までです（当日・過去の公演は「受付終了」）", "Tickets are sold until the day before the performance"),
+        I18n.t("1申込あたりの購入枚数には上限があります（イベントごと。既定は4枚）。同一公演の累計購入枚数も同じ上限です", "Each event has a per-order limit (default 4), which also applies cumulatively per performance"),
+        I18n.t("無料券（未就学児・小学生以下など）のみのお申込みはできません。一部イベントは大人券が1枚以上必要です", "Free tickets cannot be ordered alone; some events require an adult ticket"),
+        I18n.t("抽選販売は同一公演への重複申込不可。当落は当落発表日以降にマイページで確認できます", "Only one lottery entry per performance. Results appear on My Page after the results date"),
+        I18n.t("受取方法「配送」は公演日の10日前まで、支払方法「コンビニ払い」は公演日の3日前までのお申込みで選択できます", "Delivery requires 10+ days, convenience store payment requires 3+ days before the performance"),
+        I18n.t("クレジットカード払いはカード登録済みの会員のみ利用できます（マイページで登録可）", "Credit card payment requires a registered card (register on My Page)"),
+        I18n.t("キャンセルは公演日の3日前 23:59 まで可能です（キャンセル不可のイベントを除く）。抽選申込は受付期間中のみ取消可", "Cancellation is possible until 23:59, 3 days before the performance (except non-cancellable events)"),
+        I18n.t("ログイン・検索・空席確認・購入確定時に3〜5秒の処理中表示があります（操作ロック）", "Login, search, availability checks and purchase show a 3-5 second loading overlay"),
+      ];
+      document.getElementById("rules-list").innerHTML = rules.map((r, i) => `<li id="rule-${i + 1}">${r}</li>`).join("");
+    }
+
+    function renderFees() {
+      const rows = [
+        [I18n.t("システム利用料", "System fee"), `${App.fmtPrice(SYSTEM_FEE)}${I18n.t("／枚", "/ticket")}`, I18n.t("有料券のみ", "Paid tickets only")],
+        ...RECEIVE_METHODS.map(r => [I18n.t(r.name, r.en), r.feePerTicket ? `${App.fmtPrice(r.feePerTicket)}${I18n.t("／枚", "/ticket")}` : r.feePerOrder ? `${App.fmtPrice(r.feePerOrder)}${I18n.t("／件", "/order")}` : App.fmtPrice(0), I18n.t("受取方法", "Pickup")]),
+        ...PAYMENT_METHODS.map(m => [I18n.t(m.name, m.en), App.fmtPrice(m.fee), I18n.t("支払方法", "Payment")]),
+      ];
+      document.getElementById("fee-list").innerHTML = rows.map(r => `<tr><td>${r[0]}</td><td class="num">${r[1]}</td><td class="muted">${r[2]}</td></tr>`).join("");
+    }
+
+    function renderFaq() {
+      const faqs = [
+        [I18n.t("チケットはどうやって購入しますか？", "How do I buy tickets?"),
+         I18n.t("イベント一覧または詳細画面の「チケット購入」→ 公演を選択して「空席状況を確認」→ 席種・券種ごとの枚数を選択 → 購入者情報・受取方法・支払方法を入力 → 内容確認 → 購入確定、の流れです。", "Buy Tickets → choose a performance → Check Availability → select seat and quantities → enter buyer info, pickup and payment → confirm.")],
+        [I18n.t("検索方法は何がありますか？", "What search options are there?"),
+         I18n.t("「ジャンル・日付で探す」「ジャンルで探す」「キーワードで探す」の3種類です。結果は販売状況で絞り込み、開催日・料金・人気で並び替えできます。", "Genre & Date, Genre only, and Keyword. Results can be filtered by status and sorted by date, price or popularity.")],
+        [I18n.t("抽選販売とは何ですか？", "What is a lottery sale?"),
+         I18n.t("受付期間内に申し込み、当落発表日に結果が決まる販売方式です。当選した場合のみ決済されます（デモでは当落は自動判定）。", "You apply during the entry period and the results are decided on the results date. Payment occurs only if you win (auto-decided in this demo).")],
+        [I18n.t("電子チケットはどこで確認できますか？", "Where can I see my e-tickets?"),
+         I18n.t("マイページの「購入チケット」タブで「チケット表示」を押すと、QRコード（デモ）と座席・整理番号を表示します。", 'My Page → My Tickets → "Show Ticket" displays a demo QR code and seat/entry number.')],
+        [I18n.t("キャンセルはできますか？", "Can I cancel?"),
+         I18n.t("公演日の3日前 23:59 までマイページからキャンセルできます。「キャンセル不可」と記載のイベントはキャンセルできません。", "Yes, until 23:59 three days before the performance, except for non-cancellable events.")],
+        [I18n.t("データはどこに保存されますか？", "Where is data stored?"),
+         I18n.t("ブラウザの localStorage（tm_ で始まるキー）に保存されます。ヘルプ下部の「データを初期化する」で初期状態に戻せます。", "In the browser's localStorage (keys starting with tm_). Use \"Reset Data\" below to restore the initial state.")],
+        [I18n.t("英語表示にできますか？", "Is English available?"),
+         I18n.t("ヘッダーの「EN」ボタン、またはURLに ?lang=en を付けると英語表示になります。", 'Use the "EN" button in the header or add ?lang=en to the URL.')],
+      ];
+      document.getElementById("faq-list").innerHTML = faqs.map(([q, a], i) => `
+        <div class="faq-item" id="faq-${i + 1}">
+          <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">Q. ${q}<span>▼</span></div>
+          <div class="faq-a">A. ${a}</div>
+        </div>`).join("");
+    }
+
+    function resetData() {
+      if (!confirm(I18n.t("デモデータを初期化しますか？\nこのブラウザの購入履歴・お気に入り・ログイン状態がリセットされます。", "Reset demo data?\nPurchases, favourites and login state in this browser will be cleared."))) return;
+      Object.keys(localStorage).filter(k => k.startsWith("tm_")).forEach(k => localStorage.removeItem(k));
+      sessionStorage.removeItem("tm_redirect_after_login");
+      App.showToast(I18n.t("デモデータを初期化しました", "Demo data has been reset."), "success");
+      setTimeout(() => location.reload(), 600);
+    }
+  </script>
+</body>
+</html>

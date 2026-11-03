@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>イベント詳細 | TicketMarket Demo</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <script src="data/master.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/layout.js"></script>
+
+  <div id="event-detail-wrap" class="page-wrap" style="max-width:1040px"></div>
+
+  <script>
+    let ev = null;
+
+    document.addEventListener("DOMContentLoaded", () => {
+      buildPage({ title: I18n.t("イベント詳細", "Event Details") });
+      const id = new URLSearchParams(window.location.search).get("id");
+      ev = id && App.getEvent(id);
+      if (!ev) {
+        document.getElementById("event-detail-wrap").innerHTML =
+          `<div class="alert alert-danger" id="event-not-found">${I18n.t("イベントが見つかりません。", "Event not found.")}</div>`;
+        return;
+      }
+      App.addHistory(ev.id);
+      window.addEventListener("message", e => {
+        if (e.data?.type === "scheduleFrameHeight") {
+          const f = document.getElementById("schedule-iframe");
+          if (f) f.style.height = (e.data.height + 4) + "px";
+        }
+      });
+      render();
+    });
+
+    function render() {
+      const e = ev, _t = I18n.t.bind(I18n);
+      const st = App.salesStatus(e);
+      const isFav = App.isFavorite(e.id);
+      const types = App.getTypes(e), seats = App.getSeats(e);
+      const venues = [...new Set(e.perfs.map(pf => pf.venue))];
+      document.title = `${e.title} | TicketMarket Demo`;
+
+      const buyLabel = { before: _t("発売前", "Coming Soon"), soldout: _t("予定枚数終了", "Sold Out"), closed: _t("受付終了", "Closed"),
+                         lottery: _t("抽選に申し込む", "Enter Lottery") }[st.key] || _t("チケットを購入する", "Buy Tickets");
+      const buyDisabled = ["before", "soldout", "closed"].includes(st.key);
+
+      const saleInfo = [];
+      if (e.saleType === "lottery") {
+        saleInfo.push([ "info-lottery-period", _t("抽選受付期間", "Lottery period"), `〜 ${App.fmtDateDow(App.lotteryEndDate(e))} 23:59` ]);
+        saleInfo.push([ "info-lottery-result", _t("当落発表", "Results"), `${App.fmtDateDow(App.lotteryResultDate(e))} 15:00` ]);
+      }
+      if (e.salesStartOffset !== null) saleInfo.push([ "info-sales-start", _t("一般発売日", "On-sale date"), `${App.fmtDateDow(App.salesStartDate(e))} 10:00` ]);
+
+      const notes = [
+        _t(`お一人様1申込あたり${e.maxPerOrder}枚まで（同一公演の累計も同様）`, `Up to ${e.maxPerOrder} tickets per order (and per performance in total)`),
+        e.cancellable ? _t("キャンセルは公演日の3日前 23:59 まで可能です", "Cancellation is possible until 23:59, 3 days before the performance")
+                      : _t("購入後のキャンセル・変更はできません", "No cancellations or changes after purchase"),
+        _t("チケットの購入は公演日の前日までです", "Tickets are sold until the day before the performance"),
+        e.requireAdult ? _t("子供券のみの購入はできません（大人券が1枚以上必要）", "Child tickets cannot be purchased alone") : null,
+        ...e.notes,
+      ].filter(Boolean);
+
+      document.getElementById("event-detail-wrap").innerHTML = `
+        <div class="breadcrumb" id="breadcrumb">
+          <a href="${I18n.urlWith("index.html")}">${_t("ホーム", "Home")}</a><span class="sep">›</span>
+          <a href="${I18n.urlWith("search.html?mode=genre&genre=" + e.genre)}" id="bc-genre">${App.genreName(e.genre)}</a><span class="sep">›</span>
+          <span>${e.title}</span>
+        </div>
+
+        <div class="detail-hero" style="background-color:${App.genreColor(e.genre)}">
+          <span class="event-emoji">${App.genreEmoji(e.genre)}</span>
+          <span class="tag-ribbon ${st.cls}" id="detail-status-ribbon" data-sales-status="${st.key}" style="font-size:13px;top:16px;right:16px">${st.label}</span>
+          <button id="${isFav ? "btn-fav-on" : "btn-fav-off"}" class="btn-fav${isFav ? " on" : ""}" onclick="toggleFav()">${isFav ? _t("♥ お気に入り登録済み", "♥ Saved") : _t("♡ お気に入り", "♡ Favorite")}</button>
+        </div>
+
+        <div class="detail-grid">
+          <div>
+            <div class="event-badges" style="margin-bottom:6px">
+              <span class="badge badge-genre" id="detail-genre">${App.genreEmoji(e.genre)} ${App.genreName(e.genre)}</span>
+              <span class="badge badge-gray" id="detail-sub">${App.subName(e.sub)}</span>
+              ${e.saleType === "lottery" ? `<span class="badge badge-purple" id="detail-lottery-badge">${_t("抽選販売", "Lottery")}</span>` : ""}
+              ${e.tags.includes("バルテス") ? `<span class="badge badge-primary">${_t("バルテス（テスト用）", "Valtes (test data)")}</span>` : ""}
+            </div>
+            <h1 id="event-title" style="font-size:26px;color:var(--accent);line-height:1.4;margin-bottom:4px">${e.title}</h1>
+            <div id="event-performer" style="color:var(--gray);margin-bottom:12px">${e.performer}</div>
+            <p id="event-desc" style="font-size:15px;line-height:1.8;margin-bottom:18px">${e.desc}</p>
+            <dl class="info-list card" style="padding:16px 18px" id="event-info">
+              <dt>${_t("開催期間", "Period")}</dt><dd id="info-period">${App.fmtPeriod(e)}（${_t(`全${e.perfs.length}公演`, `${e.perfs.length} performances`)}）</dd>
+              <dt>${_t("会場", "Venue")}</dt><dd id="info-venue">${venues.map(v => `${App.venueName(v)} <span class="muted">（${App.getVenue(v).city}）</span>`).join("<br>")}</dd>
+              <dt>${_t("エリア", "Area")}</dt><dd id="info-area">${App.eventAreas(e).map(App.areaName).join("・")}</dd>
+              <dt>${_t("販売方式", "Sales type")}</dt><dd id="info-sale-type">${e.saleType === "lottery" ? _t("抽選販売", "Lottery") : _t("先着販売", "First come, first served")}</dd>
+              ${saleInfo.map(([id, k, v]) => `<dt>${k}</dt><dd id="${id}">${v}</dd>`).join("")}
+              <dt>${_t("購入枚数", "Limit")}</dt><dd id="info-max">${_t(`1申込${e.maxPerOrder}枚まで`, `Up to ${e.maxPerOrder} per order`)}</dd>
+              <dt>${_t("キャンセル", "Cancellation")}</dt><dd id="info-cancel">${e.cancellable ? _t("公演3日前まで可", "Until 3 days before") : _t("不可", "Not allowed")}</dd>
+            </dl>
+          </div>
+
+          <div class="buy-box" id="buy-box">
+            <div class="muted">${_t("販売状況", "Status")}</div>
+            <div style="margin-bottom:10px"><span class="badge ${st.cls}" id="detail-status" data-sales-status="${st.key}" style="font-size:13px">${st.label}</span></div>
+            <div class="muted">${_t("料金（税込）", "Price (tax incl.)")}</div>
+            <div id="detail-price" style="font-size:24px;font-weight:700;color:var(--primary);margin-bottom:14px">${App.fmtPrice(App.minPrice(e))} 〜 ${App.fmtPrice(App.maxPrice(e))}</div>
+            <button id="btn-buy-main" class="btn btn-primary btn-block btn-lg" ${buyDisabled ? "disabled" : ""} onclick="handleBuy('${e.id}')">${buyLabel}</button>
+            ${st.key === "before" ? `<div class="alert alert-warn" id="detail-before-msg" style="margin:10px 0 0;font-size:12px">${_t(`一般発売は ${App.fmtDateDow(App.salesStartDate(e))} 10:00 からです`, `On sale from ${App.fmtDateSlash(App.salesStartDate(e))} 10:00`)}</div>` : ""}
+            <div class="muted" style="margin-top:8px;text-align:center">${_t("※ 購入にはログインが必要です", "* Login required to purchase")}</div>
+          </div>
+        </div>
+
+        <!-- 公演カレンダー（iframe） -->
+        <div class="card mb-24">
+          <div class="card-head">${_t("📅 公演カレンダー", "📅 Performance Calendar")}</div>
+          <div style="padding:14px 14px 6px">
+            <iframe id="schedule-iframe" src="${I18n.urlWith("schedule-frame.html?id=" + e.id)}" style="width:100%;height:330px;border:none;display:block" scrolling="no" title="${_t("公演カレンダー", "Performance Calendar")}"></iframe>
+          </div>
+        </div>
+
+        <!-- 公演一覧 -->
+        <div class="card mb-24">
+          <div class="card-head primary">${_t("🎫 公演一覧・空席状況", "🎫 Performances & Availability")}</div>
+          <div class="table-wrap">
+            <table class="data-table" id="perf-table">
+              <thead><tr>
+                <th>${_t("公演日", "Date")}</th><th>${_t("開場／開演", "Doors / Start")}</th><th>${_t("会場", "Venue")}</th>
+                <th class="center">${_t("空席", "Avail.")}</th><th></th>
+              </tr></thead>
+              <tbody id="perf-list">
+                ${e.perfs.map(pf => {
+                  const av = App.perfAvailability(e, pf);
+                  const can = !buyDisabled && av.key !== "soldout" && av.key !== "closed";
+                  const txt = { ok: _t("◎ 余裕あり", "◎ Available"), few: _t("△ 残りわずか", "△ Few left"), soldout: _t("× 予定枚数終了", "× Sold out"), closed: _t("- 受付終了", "- Closed") }[av.key];
+                  return `<tr data-perf-id="${pf.id}" data-date="${pf.date}" data-start="${pf.start}" data-availability="${av.key}">
+                    <td class="perf-date nowrap">${App.fmtDateDow(pf.date)}</td>
+                    <td class="perf-time nowrap">${pf.open} ／ <strong>${pf.start}</strong></td>
+                    <td class="perf-venue">${App.venueName(pf.venue)}</td>
+                    <td class="center perf-avail"><span class="mark mark-${av.key}" style="font-size:13px">${e.saleType === "lottery" && av.key !== "closed" ? _t("抽選受付", "Lottery") : txt}</span></td>
+                    <td class="center">${can
+                      ? `<button class="btn btn-primary btn-sm" id="btn-perf-${pf.id}" onclick="handleBuy('${e.id}','${pf.id}')">${e.saleType === "lottery" ? _t("申込", "Apply") : _t("選択", "Select")}</button>`
+                      : `<span class="muted">-</span>`}</td>
+                  </tr>`;
+                }).join("")}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 席種・料金 -->
+        <div class="card mb-24">
+          <div class="card-head">${_t("💴 席種・料金（税込）", "💴 Seats & Prices (tax incl.)")}</div>
+          <div class="table-wrap">
+            <table class="data-table" id="price-table">
+              <thead><tr><th>${_t("席種", "Seat")}</th>${types.map(t => `<th class="num">${App.typeName(t)}</th>`).join("")}</tr></thead>
+              <tbody>
+                ${seats.map(s => `<tr data-seat="${s.name}">
+                  <td class="seat-name" style="font-weight:600">${s.name}</td>
+                  ${types.map(t => `<td class="num price-cell" data-seat="${s.name}" data-type="${t}">${s.prices[t] === undefined ? `<span class="muted">${_t("販売なし", "N/A")}</span>` : s.prices[t] === 0 ? _t("無料", "Free") : App.fmtPrice(s.prices[t])}</td>`).join("")}
+                </tr>`).join("")}
+              </tbody>
+            </table>
+          </div>
+          <div class="muted" style="padding:8px 14px 12px">${_t(`※ 別途システム利用料 ${App.fmtPrice(SYSTEM_FEE)}／枚（有料券のみ）、受取・決済手数料がかかります`, `* A system fee of ${App.fmtPrice(SYSTEM_FEE)} per paid ticket plus pickup/payment fees apply`)}</div>
+        </div>
+
+        <!-- 注意事項 -->
+        <div class="card mb-24">
+          <div class="card-head" style="background:var(--warn)">${_t("⚠️ 注意事項", "⚠️ Notes")}</div>
+          <div class="card-body"><ul class="notes-list" id="notes-list">${notes.map(n => `<li>${n}</li>`).join("")}</ul></div>
+        </div>
+      `;
+    }
+
+    function toggleFav() {
+      const isFav = App.toggleFavorite(ev.id);
+      if (!App.isLoggedIn()) return;
+      const btn = document.getElementById(isFav ? "btn-fav-off" : "btn-fav-on");
+      btn.id = isFav ? "btn-fav-on" : "btn-fav-off";
+      btn.classList.toggle("on", isFav);
+      btn.textContent = isFav ? I18n.t("♥ お気に入り登録済み", "♥ Saved") : I18n.t("♡ お気に入り", "♡ Favorite");
+      App.showToast(isFav ? I18n.t("お気に入りに追加しました", "Added to favourites") : I18n.t("お気に入りを解除しました", "Removed from favourites"), isFav ? "success" : "info");
+    }
+  </script>
+</body>
+</html>

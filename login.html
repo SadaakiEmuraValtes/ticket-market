@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ログイン | TicketMarket Demo</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <script src="data/master.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/layout.js"></script>
+
+  <div class="page-wrap" style="max-width:460px">
+    <div style="text-align:center;margin-bottom:24px">
+      <a href="index.html" style="font-size:24px;font-weight:700;color:var(--primary);text-decoration:none">🎫 TicketMarket</a>
+      <div class="muted" style="font-size:13px;margin-top:4px" data-i18n-en="Demo Site">デモサイト</div>
+    </div>
+
+    <div class="form-section">
+      <h2 style="font-size:20px;color:var(--accent);margin-bottom:20px;text-align:center" data-i18n-en="Log In">ログイン</h2>
+
+      <div id="login-err" class="alert alert-danger hidden"></div>
+
+      <div class="form-group mb-16" id="g-email">
+        <label for="email" data-i18n-en="Email Address *">メールアドレス *</label>
+        <input type="email" id="email" placeholder="user@example.com" autocomplete="email" onkeydown="if(event.key==='Enter')doLogin()">
+        <span class="error-msg" data-i18n-en="Please enter your email address">メールアドレスを入力してください</span>
+      </div>
+      <div class="form-group mb-16" id="g-pw">
+        <label for="password" data-i18n-en="Password *">パスワード *</label>
+        <div style="display:flex;gap:6px">
+          <input type="password" id="password" placeholder="パスワード" data-i18n-ph-en="Password" onkeydown="if(event.key==='Enter')doLogin()">
+          <button type="button" id="btn-toggle-pw" class="btn btn-secondary btn-sm" onclick="togglePw()" data-i18n-en="Show">表示</button>
+        </div>
+        <span class="error-msg" data-i18n-en="Please enter your password">パスワードを入力してください</span>
+      </div>
+      <label class="check-line mb-16" style="font-size:13px"><input type="checkbox" id="remember-me" checked>
+        <span data-i18n-en="Keep me logged in">ログイン状態を保持する</span></label>
+
+      <button id="btn-login" class="btn btn-primary btn-block btn-lg" onclick="doLogin()" data-i18n-en="Log In">ログイン</button>
+
+      <p style="text-align:center;font-size:13px;margin-top:18px">
+        <span data-i18n-en="New here?">アカウントをお持ちでない方は</span>
+        <a href="register.html" id="link-register" data-i18n-en="Sign Up">新規会員登録</a>
+      </p>
+    </div>
+
+    <div class="alert alert-info mt-16" style="font-size:13px">
+      🧪 <strong data-i18n-en="Test Accounts">テストアカウント</strong><span data-i18n-en=" are available for testing."> でお試しいただけます。</span><br>
+      <a href="help.html#accounts" id="link-test-accounts" data-i18n-en="View Test Accounts →">テストアカウント一覧を見る →</a>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      buildPage({ title: I18n.t("ログイン", "Log In") });
+      if (App.isLoggedIn()) { I18n.go("mypage.html"); return; }
+      document.getElementById("email").focus();
+    });
+
+    function togglePw() {
+      const pw = document.getElementById("password");
+      const show = pw.type === "password";
+      pw.type = show ? "text" : "password";
+      document.getElementById("btn-toggle-pw").textContent = show ? I18n.t("隠す", "Hide") : I18n.t("表示", "Show");
+    }
+
+    function doLogin() {
+      const email = document.getElementById("email").value.trim();
+      const pw = document.getElementById("password").value;
+      const errEl = document.getElementById("login-err");
+      document.getElementById("g-email").classList.toggle("has-error", !email);
+      document.getElementById("g-pw").classList.toggle("has-error", !pw);
+      errEl.classList.add("hidden");
+      if (!email || !pw) return;
+
+      App.showLoading(I18n.t("ログイン中...", "Logging in..."));
+      setTimeout(() => {
+        App.hideLoading();
+        const res = App.login(email, pw);
+        if (!res.ok) { errEl.textContent = res.msg; errEl.classList.remove("hidden"); return; }
+        App.showToast(I18n.t(`ようこそ、${res.user.name}さん！`, `Welcome, ${res.user.name}!`), "success");
+        const redir = sessionStorage.getItem("tm_redirect_after_login");
+        sessionStorage.removeItem("tm_redirect_after_login");
+        setTimeout(() => { if (redir) window.location.href = redir; else I18n.go("mypage.html"); }, 500);
+      }, App.loadingDelay());
+    }
+  </script>
+</body>
+</html>

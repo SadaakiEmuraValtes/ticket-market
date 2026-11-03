@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>TicketMarket Demo</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <script src="data/master.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/layout.js"></script>
+
+  <!-- ヒーロー検索 -->
+  <section class="hero" id="hero">
+    <h1 data-i18n-en="Find tickets for your next experience">観たい・行きたいが、きっと見つかる。</h1>
+    <p data-i18n-en="Sports, concerts, events, markets and theater — all in one place (demo)">スポーツ・コンサート・イベント・即売会・演劇のチケットをまとめて検索（デモ）</p>
+    <div class="search-box" id="hero-search-box">
+      <div class="field">
+        <label for="hero-genre" data-i18n-en="Genre">ジャンル</label>
+        <select id="hero-genre"><option value="all" data-i18n-en="All Genres">すべてのジャンル</option></select>
+      </div>
+      <div class="field">
+        <label for="hero-area" data-i18n-en="Area">エリア</label>
+        <select id="hero-area"><option value="all" data-i18n-en="All Areas">すべてのエリア</option></select>
+      </div>
+      <div class="field" style="min-width:170px">
+        <label for="hero-from" data-i18n-en="Date (from)">開催日（から）</label>
+        <div class="date-input-wrap">
+          <input type="text" id="hero-from" placeholder="yyyy/mm/dd" maxlength="10" oninput="autoFormatDate(this)">
+          <div class="dp-btn" id="hero-from-cal-btn" onclick="openDatePicker('hero-from')">📅</div>
+        </div>
+      </div>
+      <div class="field" style="min-width:170px">
+        <label for="hero-to" data-i18n-en="Date (to)">開催日（まで）</label>
+        <div class="date-input-wrap">
+          <input type="text" id="hero-to" placeholder="yyyy/mm/dd" maxlength="10" oninput="autoFormatDate(this)">
+          <div class="dp-btn" id="hero-to-cal-btn" onclick="openDatePicker('hero-to')">📅</div>
+        </div>
+      </div>
+      <button id="btn-hero-search" class="btn btn-primary" style="padding:10px 24px" onclick="heroSearch()" data-i18n-en="🔍 Search">🔍 探す</button>
+    </div>
+    <div style="margin-top:14px;font-size:13px">
+      <a id="link-keyword-search" href="search.html?mode=keyword" style="color:#FFD6E5" data-i18n-en="Search by keyword →">キーワードで探す →</a>
+    </div>
+  </section>
+
+  <div class="page-wrap">
+
+    <!-- ジャンルから探す -->
+    <div class="section" id="section-genres">
+      <div class="section-title" data-i18n-en="🎟 Browse by Genre">🎟 ジャンルから探す</div>
+      <div class="genre-tiles" id="genre-tiles"></div>
+    </div>
+
+    <!-- 今週末のイベント -->
+    <div class="section" id="section-weekend">
+      <div class="section-title">
+        <span id="weekend-title"></span>
+        <a class="more" id="link-weekend-more" href="#" data-i18n-en="See all →">すべて見る →</a>
+      </div>
+      <div class="h-scroll" id="weekend-list"></div>
+    </div>
+
+    <div class="two-col" style="margin-bottom:40px">
+      <!-- ランキング -->
+      <div id="section-ranking">
+        <div class="section-title" data-i18n-en="🔥 Popular Ranking">🔥 人気ランキング</div>
+        <div class="rank-list" id="rank-list"></div>
+      </div>
+      <!-- 抽選受付中・発売予定 -->
+      <div id="section-notice">
+        <div class="section-title" data-i18n-en="📢 Lottery Open / Coming Soon">📢 抽選受付中・発売予定</div>
+        <div class="rank-list" id="notice-list"></div>
+      </div>
+    </div>
+
+    <!-- 最近チェックしたイベント -->
+    <div class="section hidden" id="section-history">
+      <div class="section-title">
+        <span data-i18n-en="👀 Recently Viewed">👀 最近チェックしたイベント</span>
+        <a class="more" id="btn-clear-history" href="javascript:void(0)" onclick="clearHistory()" data-i18n-en="Clear history">履歴を消去</a>
+      </div>
+      <div class="h-scroll" id="history-list"></div>
+    </div>
+
+    <div class="alert alert-info" id="demo-info">
+      🧪 <strong data-i18n-en="Test accounts">テストアカウント</strong>
+      <span data-i18n-en=" and test events (sold-out / coming soon / lottery etc.) are listed on the Help page.">・テスト用イベント（完売／発売前／抽選など）はヘルプページに一覧があります。</span>
+      <a id="link-help-accounts" href="help.html#accounts" data-i18n-en="View →">一覧を見る →</a>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      buildPage({ title: "", activePage: "home" });
+      document.title = I18n.t("TicketMarket Demo｜チケット販売デモサイト", "TicketMarket Demo | Ticketing Demo Site");
+      initHeroForm();
+      renderGenreTiles();
+      renderWeekend();
+      renderRanking();
+      renderNotice();
+      renderHistory();
+    });
+
+    function initHeroForm() {
+      GENRES.forEach(g => document.getElementById("hero-genre").insertAdjacentHTML("beforeend",
+        `<option value="${g.id}">${g.emoji} ${App.genreName(g.id)}</option>`));
+      AREAS.forEach(a => document.getElementById("hero-area").insertAdjacentHTML("beforeend",
+        `<option value="${a.id}">${App.areaName(a.id)}</option>`));
+    }
+
+    function heroSearch() {
+      const genre = document.getElementById("hero-genre").value;
+      const area  = document.getElementById("hero-area").value;
+      const fromRaw = document.getElementById("hero-from").value.trim();
+      const toRaw   = document.getElementById("hero-to").value.trim();
+      const from = App.parseDateStr(fromRaw), to = App.parseDateStr(toRaw);
+      if ((fromRaw && !from) || (toRaw && !to)) { App.showToast(I18n.t("日付は yyyy/mm/dd 形式で入力してください", "Please enter dates as yyyy/mm/dd."), "error"); return; }
+      if (from && to && from > to) { App.showToast(I18n.t("開催日（まで）は開催日（から）以降を指定してください", "The end date must be on or after the start date."), "error"); return; }
+      const q = new URLSearchParams({ mode: "genredate", genre, area, from, to, run: "1" });
+      I18n.go("search.html?" + q.toString());
+    }
+
+    function renderGenreTiles() {
+      document.getElementById("genre-tiles").innerHTML = GENRES.map(g => {
+        const count = EVENTS.filter(e => e.genre === g.id).length;
+        return `<div class="genre-tile" id="genre-tile-${g.id}" data-genre="${g.id}" style="background-color:${g.color}"
+                  onclick="I18n.go('search.html?mode=genre&genre=${g.id}')">
+                  <span class="gt-emoji">${g.emoji}</span>${App.genreName(g.id)}
+                  <span class="gt-count">${I18n.t(`${count}件`, `${count} events`)}</span>
+                </div>`;
+      }).join("");
+    }
+
+    // 今週末（直近の土日）。今日が日曜なら今日のみ
+    function weekendRange() {
+      const t = App.today(), dow = t.getDay();
+      const sat = new Date(t); sat.setDate(t.getDate() + (dow === 0 ? -1 : 6 - dow));
+      const sun = new Date(sat); sun.setDate(sat.getDate() + 1);
+      return { from: App.fmtDate(sat < t ? t : sat), to: App.fmtDate(sun) };
+    }
+
+    function renderWeekend() {
+      const { from, to } = weekendRange();
+      document.getElementById("weekend-title").textContent =
+        I18n.t(`📅 今週末のイベント（${App.fmtDateDow(from)}〜${App.fmtDateDow(to)}）`, `📅 This Weekend (${App.fmtDateSlash(from)} - ${App.fmtDateSlash(to)})`);
+      document.getElementById("link-weekend-more").href = I18n.urlWith(`search.html?mode=genredate&from=${from}&to=${to}`);
+      const list = App.searchEvents({ from, to }).sort((a, b) => b.popularity - a.popularity).slice(0, 10);
+      document.getElementById("weekend-list").innerHTML = list.length
+        ? list.map(e => eventCardHtml(e, { idPrefix: "weekend-" })).join("")
+        : `<div class="alert alert-info">${I18n.t("今週末のイベントはありません。", "No events this weekend.")}</div>`;
+    }
+
+    function rankItem(e, i, prefix, meta) {
+      const st = App.salesStatus(e);
+      return `<div class="rank-item" id="${prefix}-${i + 1}" data-event-id="${e.id}" onclick="I18n.open('event.html?id=${e.id}','_blank')">
+                <div class="rank-no">${i + 1}</div>
+                <div style="flex:1;min-width:0">
+                  <div class="rank-title">${e.title}</div>
+                  <div class="rank-meta">${App.genreEmoji(e.genre)} ${App.genreName(e.genre)} ／ ${meta}</div>
+                </div>
+                <span class="badge ${st.cls}">${st.label}</span>
+              </div>`;
+    }
+
+    function renderRanking() {
+      const list = [...EVENTS].sort((a, b) => b.popularity - a.popularity).slice(0, 10);
+      document.getElementById("rank-list").innerHTML = list.map((e, i) => rankItem(e, i, "rank", App.fmtPeriod(e))).join("");
+    }
+
+    function renderNotice() {
+      const list = EVENTS.filter(e => ["lottery", "before"].includes(App.salesStatus(e).key));
+      document.getElementById("notice-list").innerHTML = list.map((e, i) => {
+        const st = App.salesStatus(e).key;
+        const meta = st === "lottery"
+          ? I18n.t(`抽選受付〜${App.fmtDateDow(App.lotteryEndDate(e))}`, `Lottery until ${App.fmtDateSlash(App.lotteryEndDate(e))}`)
+          : I18n.t(`一般発売 ${App.fmtDateDow(App.salesStartDate(e))} 10:00`, `On sale ${App.fmtDateSlash(App.salesStartDate(e))} 10:00`);
+        return rankItem(e, i, "notice", meta);
+      }).join("");
+    }
+
+    function renderHistory() {
+      const list = App.getHistory();
+      if (!list.length) { document.getElementById("section-history").classList.add("hidden"); return; }
+      document.getElementById("section-history").classList.remove("hidden");
+      document.getElementById("history-list").innerHTML = list.map(e => eventCardHtml(e, { idPrefix: "history-" })).join("");
+    }
+
+    function clearHistory() {
+      App.clearHistory();
+      renderHistory();
+      App.showToast(I18n.t("閲覧履歴を消去しました", "Viewing history cleared."), "info");
+    }
+  </script>
+</body>
+</html>
