@@ -112,25 +112,29 @@
     </div>
     <div class="active-conditions" id="active-conditions"></div>
 
-    <!-- 検索結果 -->
+    <!-- 検索結果（20件ずつページ切替） -->
+    <div class="pager-bar" id="pager-bar-top">
+      <span class="result-range" id="result-range"></span>
+      <nav class="pager" id="pager-top" aria-label="pagination"></nav>
+    </div>
     <div id="event-results"></div>
     <div id="no-result" class="alert alert-info hidden" data-i18n-en="No events matched your criteria. Please change the conditions.">条件に一致するイベントが見つかりませんでした。条件を変更してください。</div>
-    <div id="loading-sentinel" class="load-more-sentinel"></div>
-    <div id="no-more" class="text-center hidden" style="padding:20px;color:var(--gray);font-size:13px" data-i18n-en="─ All results displayed ─">─ 以上で全件表示しました ─</div>
+    <nav class="pager pager-bottom" id="pager" aria-label="pagination"></nav>
   </div>
 
   <script>
-    const PAGE_SIZE = 6;
+    const PAGE_SIZE = 20;
     let mode = "genredate";
     let genreSel = "all", subSel = "";
-    let allResults = [], filteredResults = [], displayedCount = 0, currentView = "grid";
+    let allResults = [], filteredResults = [], currentPage = 1, currentView = "grid";
+    // URLの ?page= は初回表示のみ反映（以降は検索・絞り込みのたびに1ページ目へ）
+    let initialPage = parseInt(new URLSearchParams(window.location.search).get("page"), 10) || 1;
 
     document.addEventListener("DOMContentLoaded", () => {
       buildPage({ title: I18n.t("イベントを探す", "Find Events"), activePage: "search" });
       initForms();
       restoreParams();
       switchMode(mode, true);
-      initInfiniteScroll();
     });
 
     function initForms() {
@@ -273,32 +277,60 @@
       filteredResults.sort(by[sort]);
 
       document.getElementById("result-count").textContent = I18n.t(`${filteredResults.length}件`, `${filteredResults.length} events`);
-      document.getElementById("event-results").innerHTML = "";
-      document.getElementById("event-results").className = currentView === "grid" ? "event-grid" : "event-list";
-      document.getElementById("no-more").classList.add("hidden");
       document.getElementById("no-result").classList.toggle("hidden", filteredResults.length > 0 || (cleared && mode === "keyword"));
-      displayedCount = 0;
-      loadMore();
+      const page = initialPage; initialPage = 1;
+      goPage(page, false);
     }
 
-    function switchView(v) { currentView = v; applyFilters(); }
+    function switchView(v) { currentView = v; goPage(currentPage, false); }
 
-    function loadMore() {
-      const next = filteredResults.slice(displayedCount, displayedCount + PAGE_SIZE);
+    function totalPages() { return Math.max(1, Math.ceil(filteredResults.length / PAGE_SIZE)); }
+
+    // ── ページ表示 ──
+    function goPage(n, scroll = true) {
+      currentPage = Math.min(Math.max(1, n), totalPages());
+      const startIdx = (currentPage - 1) * PAGE_SIZE;
+      const items = filteredResults.slice(startIdx, startIdx + PAGE_SIZE);
       const box = document.getElementById("event-results");
-      next.forEach(e => box.insertAdjacentHTML("beforeend", eventCardHtml(e, { mode: currentView })));
-      displayedCount += next.length;
-      if (displayedCount > 0 && displayedCount >= filteredResults.length) { document.getElementById("no-more").classList.remove("hidden"); return; }
-      // 画面に余白がありセンチネルが見えたままの場合は続けて読み込む
-      requestAnimationFrame(() => {
-        if (document.getElementById("loading-sentinel").getBoundingClientRect().top < window.innerHeight && displayedCount < filteredResults.length) loadMore();
-      });
+      box.className = currentView === "grid" ? "event-grid" : "event-list";
+      box.dataset.page = currentPage;
+      box.innerHTML = items.map(e => eventCardHtml(e, { mode: currentView })).join("");
+
+      const total = filteredResults.length;
+      const range = document.getElementById("result-range");
+      range.textContent = total ? I18n.t(`${total}件中 ${startIdx + 1}〜${startIdx + items.length}件を表示`, `Showing ${startIdx + 1}-${startIdx + items.length} of ${total}`) : "";
+      document.getElementById("pager-bar-top").classList.toggle("hidden", !total);
+      renderPager("pager-top", "pager-top-");
+      renderPager("pager", "pager-");
+
+      const url = new URL(window.location.href);
+      if (currentPage > 1) url.searchParams.set("page", currentPage); else url.searchParams.delete("page");
+      history.replaceState(null, "", url);
+      if (scroll) document.getElementById("filter-bar").scrollIntoView({ behavior: "smooth", block: "start" });
     }
 
-    function initInfiniteScroll() {
-      new IntersectionObserver(entries => {
-        if (entries[0].isIntersecting && displayedCount < filteredResults.length) loadMore();
-      }, { threshold: 0.1 }).observe(document.getElementById("loading-sentinel"));
+    // ページ番号: 1 … (現在±2) … 最終
+    function renderPager(elId, pre) {
+      const el = document.getElementById(elId);
+      const last = totalPages();
+      el.dataset.current = currentPage;
+      el.dataset.total = last;
+      if (!filteredResults.length || last <= 1) { el.innerHTML = ""; el.classList.add("hidden"); return; }
+      el.classList.remove("hidden");
+      const pages = [], near = window.innerWidth <= 640 ? 1 : 2;  // スマホ幅は前後1ページ
+      for (let p = 1; p <= last; p++) {
+        if (p === 1 || p === last || Math.abs(p - currentPage) <= near) pages.push(p);
+        else if (pages[pages.length - 1] !== "…") pages.push("…");
+      }
+      const btn = (id, label, page, disabled, cls = "") =>
+        `<button class="pager-btn ${cls}" id="${pre}${id}" ${disabled ? "disabled" : ""} onclick="goPage(${page})">${label}</button>`;
+      el.innerHTML =
+        btn("first", "«", 1, currentPage === 1, "pager-first") +
+        btn("prev", I18n.t("‹ 前へ", "‹ Prev"), currentPage - 1, currentPage === 1, "pager-prev") +
+        pages.map(p => p === "…" ? `<span class="pager-ellipsis">…</span>`
+          : `<button class="pager-btn pager-page${p === currentPage ? " active" : ""}" id="${pre}page-${p}" data-page="${p}" ${p === currentPage ? 'aria-current="page"' : ""} onclick="goPage(${p})">${p}</button>`).join("") +
+        btn("next", I18n.t("次へ ›", "Next ›"), currentPage + 1, currentPage === last, "pager-next") +
+        btn("last", "»", last, currentPage === last, "pager-last");
     }
   </script>
 </body>

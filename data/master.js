@@ -448,6 +448,135 @@ const EVENTS = [
     "真打昇進記念の独演会。", { popularity: 34 }),
 ];
 
+// ── 一般イベント（自動生成・200件） ────────────────────────
+// 検索結果のページャー確認用。固定シードの LCG で生成するため毎回同じ内容になる。
+// ID: e{ジャンル番号}{50〜89}（例: e150〜e189 = スポーツ）。すべて一般発売。
+// 人気度は 3〜20 に抑え、トップのランキング・今週末・抽選/発売予定の表示は既存イベントのまま
+const _GEN_SPECS = {
+  sports: [
+    { sub: "野球", tpl: "baseball", n: 10, times: ["18:00", "14:00"], venues: ["v-tk-dome", "v-os-dome", "v-sp-dome", "v-fk-stadium"],
+      a: ["湾岸シーガルズ", "なにわブレイブス", "北嶺ベアーズ", "博多オーシャンズ", "栄ファルコンズ", "杜の都フェニックス", "札幌スノーホークス", "京浜シーラカンス"],
+      b: ["秋季シリーズ", "ナイター", "デーゲーム", "ファン感謝ゲーム"], vs: true,
+      desc: ["家族で楽しめるプロ野球観戦。", "迫力の打撃戦をスタンドから。", "限定グッズ配布デー。"] },
+    { sub: "サッカー", tpl: "soccer", n: 10, times: ["15:00", "19:00"], venues: ["v-tk-stadium", "v-fk-stadium", "v-sd-arena"],
+      a: ["ベイサイドFC", "金鯱ユナイテッド", "博多ウェーブス", "杜の都FC", "札幌ノーザンズ", "なにわSC", "湘南ブリーズ", "瀬戸内ロッソ"],
+      b: ["リーグ戦", "カップ戦", "ナイトマッチ", "ダービーマッチ"], vs: true,
+      desc: ["スタジアムが一体となる熱戦。", "順位を左右する重要な一戦。", "ゴール裏で声援を送ろう。"] },
+    { sub: "バスケットボール", tpl: "arena_sports", n: 10, times: ["18:30", "14:00"], venues: ["v-tk-arena", "v-ng-arena", "v-sd-arena"],
+      a: ["有明サンダース", "金鯱ジャガーズ", "杜の都ブルース", "なにわスパークス", "博多ブレイカーズ", "札幌アイスウルブス", "栄ロケッツ", "京浜ベイホークス"],
+      b: ["ホームゲーム", "ウィークエンドゲーム", "チャリティマッチ", "ナイトゲーム"], vs: true,
+      desc: ["コートサイドで迫力のプレーを。", "ハーフタイムショーも必見。"] },
+    { sub: "格闘技", tpl: "fight", n: 10, times: ["17:00", "18:00"], venues: ["v-os-dome", "v-tk-arena", "v-ng-arena"],
+      a: ["IRON FIST", "STEEL HEART", "THUNDER DOME", "KING OF RING", "WILD FANG", "NEO STRIKE", "BLACK TIGER", "CRIMSON BOUT"],
+      b: ["2026", "ファイナル", "チャンピオンシップ", "GP 開幕戦"], org: "実行委員会（架空）",
+      desc: ["王座をかけたメインイベント。", "注目の若手ファイターが集結。"] },
+  ],
+  concert: [
+    { sub: "J-POP", tpl: "concert", n: 10, times: ["18:30", "17:00"], venues: ["v-tk-arena", "v-os-dome", "v-ng-arena", "v-sp-dome", "v-sd-arena"],
+      a: ["ハルカゼ", "アオイ・ミライ", "SORA NO IRO", "月見坂ユウ", "ルミエール", "星野アカリ", "NAGI", "サクラ前線"],
+      b: ["LIVE TOUR 2026", "アリーナライブ", "ワンマンライブ", "アコースティックナイト"],
+      desc: ["最新アルバムを引っさげた全国ツアー。", "ヒット曲満載のスペシャルライブ。"] },
+    { sub: "ロック", tpl: "livehouse", n: 10, times: ["19:00", "18:30"], venues: ["v-tk-live", "v-fk-hall"],
+      a: ["THE NOISE PILOTS", "鉄線花", "BLUE MONDAY CLUB", "RED LANTERN", "サウンドクラッシュ", "夜行列車", "GLASS ROCKETS", "ハイボルテージ"],
+      b: ["ライブハウスツアー", "対バンナイト", "Release Party", "秋の陣"],
+      desc: ["汗が飛び散る至近距離のライブ。", "新曲初披露のツアー公演。"] },
+    { sub: "アイドル", tpl: "idol", n: 10, times: ["17:00", "13:00"], venues: ["v-tk-arena", "v-ng-arena", "v-os-hall"],
+      a: ["ミルキィ☆ウェイ", "PASTEL BLOOM", "きらりスマイル", "ドリーム☆パレット", "CANDY SPARK", "Twinkle Ribbon", "はなまる組", "ネオン☆シュガー"],
+      b: ["ワンマンライブ", "ファンミーティング", "全国ツアー", "生誕祭"],
+      desc: ["ファミリー席あり。親子で楽しめます。", "ここでしか見られない特別演出。"] },
+    { sub: "クラシック・ジャズ", tpl: "classic", n: 10, times: ["19:00", "14:00"], venues: ["v-tk-hall", "v-os-hall", "v-fk-hall"],
+      a: ["湾岸フィルハーモニー", "なにわ室内管弦楽団", "杜の都交響楽団", "博多ジャズオーケストラ", "栄弦楽四重奏団", "札幌ブラスアンサンブル", "上野ピアノトリオ", "ムーンライト・ジャズクインテット"],
+      b: ["定期演奏会", "名曲コンサート", "ジャズナイト", "室内楽の夕べ"],
+      desc: ["U-25割引あり。", "名曲を極上の音響で。"] },
+  ],
+  event: [
+    { sub: "展示会・博覧会", tpl: "expo", n: 10, times: ["10:00"], open: 30, venues: ["v-tk-bigsq", "v-os-messe", "v-ng-messe", "v-fk-messe"],
+      a: ["スマートライフ", "ロボティクス", "ゲームクリエイターズ", "アウトドア", "カメラ＆フォト", "鉄道模型", "ペット＆ライフ", "フードテック"],
+      b: ["EXPO 2026", "フェア", "ショー", "博覧会"], org: "実行委員会（架空）",
+      desc: ["最新製品の展示と体験コーナー。", "未就学児は無料（要発券）。"] },
+    { sub: "フェス", tpl: "fes", n: 10, times: ["11:00"], open: 60, venues: ["v-fk-messe", "v-os-messe", "v-ng-messe"],
+      a: ["SUNSET", "GREEN WAVE", "MIDNIGHT", "SEASIDE", "AUTUMN LEAF", "STAR LIGHT", "HARVEST", "CITY BEAT"],
+      b: ["FES 2026", "MUSIC FESTIVAL", "ROCK FES", "JAZZ FES"], org: "実行委員会（架空）",
+      desc: ["豪華アーティストが集結する野外フェス。", "フード出店も多数。"] },
+    { sub: "体験・ワークショップ", tpl: "workshop", n: 10, times: ["10:30", "14:00"], open: 15, venues: ["v-tk-bigsq", "v-ng-messe", "v-fk-messe"],
+      a: ["陶芸", "手打ちそば", "レザークラフト", "フラワーアレンジ", "プログラミング", "アロマ", "木工", "和菓子づくり"],
+      b: ["体験教室", "ワークショップ", "親子体験会", "1日講座"], org: "ワークショップ事務局（架空）",
+      desc: ["初心者歓迎。道具はすべて貸し出し。", "作品はお持ち帰りいただけます。"] },
+    { sub: "トークショー", tpl: "talk", n: 10, times: ["14:00", "18:30"], open: 30, venues: ["v-tk-hall", "v-os-theater", "v-fk-hall"],
+      a: ["人気作家", "映画監督", "料理研究家", "漫画家", "登山家", "建築家", "ゲームプロデューサー", "天文学者"],
+      b: ["トークショー", "講演会", "対談イベント", "スペシャルトーク"], org: "トークイベント事務局（架空）",
+      desc: ["ここでしか聞けない制作秘話。", "サイン会参加券付きの席あり。"] },
+  ],
+  market: [
+    { sub: "同人誌即売会", tpl: "doujin", n: 14, times: ["10:00"], open: 60, venues: ["v-tk-bigsq", "v-os-messe", "v-ng-messe", "v-fk-messe"],
+      a: ["コミックパレード", "創作フェスタ", "まんがひろば", "同人スクエア", "イラストマルシェ", "ファンアート祭", "小説サークル交流会", "オリジナル創作展"],
+      b: ["春", "夏", "秋", "冬"], org: "準備会（架空）",
+      desc: ["多数のサークルが参加する即売会。", "小学生以下は保護者同伴で無料。"] },
+    { sub: "ハンドメイド", tpl: "handmade", n: 13, times: ["10:00"], open: 30, venues: ["v-tk-bigsq", "v-os-messe", "v-ng-messe", "v-fk-messe"],
+      a: ["ハンドメイドマルシェ", "クラフトフェア", "アクセサリー博", "手しごと市", "布もの雑貨展", "キャンドル＆ソープ市", "ガラス工芸市", "木のおもちゃ市"],
+      b: ["2026秋", "2026冬", "ナイト", "スペシャル"], org: "実行委員会（架空）",
+      desc: ["作家さんと直接話せるマーケット。", "ワークショップも同時開催。"] },
+    { sub: "古書・レコード", tpl: "records", n: 13, times: ["11:00"], open: 120, venues: ["v-tk-hall", "v-os-messe", "v-fk-messe"],
+      a: ["古本まつり", "レコード＆CDフェア", "ヴィンテージ雑貨市", "古地図・古書展", "アナログ盤マーケット", "昭和レトロ市", "絵本の古書市", "ジャズレコード市"],
+      b: ["第2回", "第3回", "特別編", "冬の陣"], org: "実行委員会（架空）",
+      desc: ["掘り出し物に出会える古書・レコード市。", "早割入場は9:00から。"] },
+  ],
+  stage: [
+    { sub: "ミュージカル", tpl: "musical", n: 10, run: true, times: ["13:00", "18:00"], venues: ["v-tk-theater", "v-os-theater", "v-ng-theater"],
+      a: ["星降る丘の", "月影の", "硝子の", "風の街の", "真夜中の", "虹色の", "時計塔の", "雪国の"], b: ["王女", "サーカス", "ラプソディ", "探偵"],
+      fmt: (a, b) => `ミュージカル「${a}${b}」`, troupe: true,
+      desc: ["歌とダンスで綴るオリジナルミュージカル。", "U-25割引あり。"] },
+    { sub: "演劇", tpl: "play", n: 10, run: true, times: ["14:00", "19:00"], venues: ["v-tk-theater", "v-os-theater", "v-ng-theater"],
+      a: ["灯台守と", "さよならの", "遠い夏の", "嘘つきな", "最後の", "名前のない", "ひだまりの", "雨音と"], b: ["手紙", "約束", "食卓", "旅人"],
+      fmt: (a, b) => `舞台「${a}${b}」`, troupe: true,
+      desc: ["心に沁みる会話劇。", "BOX席（2名様専用）あり。"] },
+    { sub: "お笑い", tpl: "comedy", n: 10, times: ["18:30", "14:00"], venues: ["v-tk-theater", "v-os-theater", "v-ng-theater", "v-fk-hall"],
+      a: ["爆笑ライブ", "漫才ナイト", "コント祭", "若手芸人バトル", "ものまね大会", "大喜利ライブ", "お笑い寄席", "ピン芸人ナイト"],
+      b: ["vol.1", "vol.2", "vol.3", "SP"], org: "お笑いライブ事務局（架空）",
+      desc: ["人気芸人が多数出演。", "笑って楽しむ2時間。"] },
+    { sub: "伝統芸能", tpl: "kabuki", n: 10, times: ["11:00", "16:00"], venues: ["v-tk-hall", "v-os-hall", "v-ng-theater"],
+      a: ["新春歌舞伎", "能と狂言の夕べ", "文楽公演", "日本舞踊の会", "和太鼓公演", "三味線演奏会", "雅楽の調べ", "邦楽名曲選"],
+      b: ["特別公演", "昼の部", "夜の部", "記念公演"], org: "保存会（架空）",
+      desc: ["初心者向けイヤホンガイド付き。", "日本の伝統芸能を間近で。"] },
+  ],
+};
+const _GEN_TROUPES = ["劇団ミラージュ（架空）", "劇団あおぞら（架空）", "劇団ステラ（架空）", "カンパニー灯（架空）"];
+
+EVENTS.push(...(() => {
+  let s = 20261105;
+  const rnd = () => (s = (Math.imul(s, 1103515245) + 12345) >>> 0) / 4294967296;
+  const pick = a => a[Math.floor(rnd() * a.length)];
+  const list = [];
+  GENRES.forEach((g, gi) => {
+    let k = 0;
+    _GEN_SPECS[g.id].forEach(sp => {
+      for (let i = 0; i < sp.n; i++, k++) {
+        const a = sp.a[i % sp.a.length], b = sp.b[Math.floor(i / sp.a.length) % sp.b.length];
+        const title = sp.fmt ? sp.fmt(a, b) : `${a} ${b}`;
+        const performer = sp.vs ? `${a} vs ${sp.a[(i + 1 + Math.floor(i / sp.a.length)) % sp.a.length]}`
+          : sp.troupe ? pick(_GEN_TROUPES) : sp.org ? `${a}${sp.org}` : a;
+        const venue = pick(sp.venues);
+        const open = t => (sp.open ? _minus(t, sp.open) : undefined);
+        // 公演: 約1割は過去のみ（受付終了）、それ以外は今後 3〜70日
+        const start = rnd() < 0.08 ? -20 + Math.floor(rnd() * 15) : 3 + Math.floor(rnd() * 60);
+        let perfs;
+        if (sp.run) perfs = _run(start, 5 + Math.floor(rnd() * 10), sp.times);
+        else {
+          const cnt = 1 + Math.floor(rnd() * 3);
+          perfs = [];
+          for (let p = 0; p < cnt; p++) { const t = pick(sp.times); perfs.push(_perf(start + p * (1 + Math.floor(rnd() * 7)), t, open(t), p && rnd() < 0.3 ? pick(sp.venues) : undefined)); }
+        }
+        const r = rnd();
+        list.push(_ev(`e${gi + 1}${50 + k}`, g.id, sp.sub, title, performer, venue, sp.tpl, perfs, pick(sp.desc), {
+          popularity: 3 + Math.floor(rnd() * 18), fewLeft: r < 0.08, soldOutAll: r >= 0.08 && r < 0.13,
+          maxPerOrder: ["baseball", "soccer"].includes(sp.tpl) ? 6 : 4, requireAdult: sp.tpl === "doujin",
+        }));
+      }
+    });
+  });
+  return list;
+})());
+
 // ── 購入ステータス ─────────────────────────────────────────
 const ORDER_STATUS = {
   PURCHASED: "purchased",   // 購入済み

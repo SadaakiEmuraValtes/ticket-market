@@ -45,6 +45,13 @@ python -m http.server 8080   # または npx serve .
 | e008 | バルテス・ロックナイト vol.8 | 全席種残りわずか（2〜7枚） |
 
 **公演日は「今週の日曜日」を基準に自動生成**します（`data/master.js` の `BASE_DATE`）。曜日は常に固定で、日付は週ごとに進みます。
+
+### 📦 一般イベント（自動生成・200件）
+
+ページャー確認用に、各ジャンル約40件の架空イベントを `data/master.js` の `_GEN_SPECS` から固定シードの LCG で生成しています（毎回同じ内容）。
+ID は `e{ジャンル番号}{50〜89}`（例: スポーツ `e150`〜`e189`、演劇・舞台 `e550`〜`e589`）。すべて一般発売で、約1割は受付終了・約5%は完売・約8%は残りわずか。
+人気度は低め（3〜20）に設定しているため、トップのランキング・抽選/発売予定は既存イベントのままです。
+「すべてのジャンル」検索は **250件 = 13ページ**、ジャンル別は約50件 = 3ページ。
 在庫（残席）はイベントID＋公演ID＋席種を種にした決定論的ハッシュで生成し、購入分を差し引いて表示します。
 
 ---
@@ -54,7 +61,7 @@ python -m http.server 8080   # または npx serve .
 ```
 ticket-market/
 ├── index.html          # トップ（ジャンル×エリア×日付検索・ジャンル・今週末・ランキング・抽選/発売予定・閲覧履歴）
-├── search.html         # イベント検索（3モード: ジャンル・日付 / ジャンル / キーワード、無限スクロール）
+├── search.html         # イベント検索（3モード: ジャンル・日付 / ジャンル / キーワード、20件ずつのページャー）
 ├── event.html          # イベント詳細（別ウィンドウ・公演一覧・席種料金表・注意事項・お気に入り）
 ├── schedule-frame.html # 公演カレンダー（event.html 内 iframe・日付クリックで公演選択へ）
 ├── ticket-select.html  # チケット選択（公演 → 空席確認 → 席種 → 券種ごとの枚数）
@@ -66,7 +73,7 @@ ticket-market/
 ├── js/app.js           # アプリコア（認証・在庫/販売状況・料金計算・購入・キャンセル・お気に入り）
 ├── js/layout.js        # ヘッダー・フッター・免責・カレンダー・イベントカード・お知らせモーダル（NoticeUI）
 ├── js/i18n.js          # 多言語（?lang=en）
-└── data/master.js      # マスタ（ユーザー5・ジャンル5・会場19・イベント50・席種テンプレート・サンプル購入履歴・サンプルお知らせ）
+└── data/master.js      # マスタ（ユーザー5・ジャンル5・会場19・イベント250（うち200件は自動生成）・席種テンプレート・サンプル購入履歴・サンプルお知らせ）
 ```
 
 ---
@@ -77,6 +84,7 @@ ticket-market/
 |------|------|
 | 🔍 イベント検索 | ①ジャンル・エリア・開催日（今日/明日/今週末/来週末/30日以内のクイック指定あり） ②ジャンル＋サブジャンル ③キーワード（スペース区切りAND） |
 | 🧮 絞り込み・並び替え | 販売状況（発売中/抽選/発売前/完売）、開催日・料金・人気順、グリッド/リスト切替 |
+| 📄 ページャー | 検索結果は20件ずつ表示。« ‹前へ 1 … 4 5 6 … 13 次へ› » 形式（スマホ幅は前後1ページ・«»非表示）。URL `?page=N` で指定ページを直接表示 |
 | 🎫 イベント詳細 | 公演カレンダー（iframe）・公演ごとの空席（◎/△/×）・席種×券種の料金表・注意事項 |
 | 🪑 チケット選択 | 公演選択 → 空席確認 → 席種（残席表示）→ 券種（大人/子供/学生/U-25 等、イベントにより異なる）ごとの枚数 |
 | 💳 購入手続き | 受取方法（電子チケット/コンビニ発券/配送）・支払方法（クレジット/コンビニ払い/QR）・手数料自動計算・同意チェック |
@@ -128,6 +136,8 @@ Demo-Travel と同様、XPath/CSS で安定して要素を特定できるよう 
 | 新着モーダル | `#notice-popup[data-count]` / `#notice-popup-count` / 各行 `.notice-popup-item[data-notice-id]` / 見る `#btn-notice-view-{お知らせID}`（`.btn-notice-view`） / `#btn-notice-popup-later` |
 | お知らせ詳細モーダル | `#notice-detail[data-notice-id]` / `#notice-detail-title` `#notice-detail-body` `#notice-detail-date` / `#btn-notice-back`（新着一覧へ） / `#btn-notice-detail-close` / `#btn-notice-event` / `#btn-notice-tab` |
 | お知らせ一覧（マイページ） | `#tab-notices` / `#tab-notice-badge` / `#count-notices` / `#notice-filter-all\|unread\|campaign\|ticket\|lottery\|info` / `.notice-item[data-notice-id][data-read="false"][data-category]` / `#btn-notice-read-all` / 空 `#no-notices` |
+| ページャー（下部 / 上部） | `#pager[data-current][data-total]` / `#pager-prev` `#pager-next` `#pager-first` `#pager-last` / `#pager-page-3`（`.pager-page[data-page="3"]`、現在ページは `.active`）。上部は `#pager-top` 内で接頭辞 `pager-top-`（例 `#pager-top-next`） |
+| 表示範囲 | `#result-range`（例「250件中 21〜40件を表示」）/ `#result-count` / `#event-results[data-page]` |
 | ローディング | `#loading-overlay`（消えるまで待機） |
 
 `<option>` / 行要素の `data-availability` は `ok`（◎）/ `few`（△）/ `soldout`（×）/ `closed`（受付終了）。
