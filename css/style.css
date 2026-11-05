@@ -68,6 +68,12 @@ button, input, select, textarea { font-family: inherit; }
 .btn-register { background: var(--primary) !important; color: var(--white) !important; font-weight: 600; }
 .btn-register:hover { background: var(--primary-dk) !important; }
 .btn-mypage { color: #FFC9DB !important; font-weight: 600; }
+.btn-notices { position: relative; display: inline-flex; align-items: center; gap: 4px; }
+.notice-badge {
+  display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px;
+  border-radius: 9px; background: var(--danger); color: var(--white); font-size: 11px; font-weight: 700; line-height: 1; margin-left: 4px;
+}
+.notice-badge.hidden { display: none; }
 .btn-lang {
   background: transparent; border: 1px solid rgba(255,255,255,.5); color: white; border-radius: 12px;
   padding: 3px 10px; font-size: 12px; cursor: pointer; font-weight: 600; margin-left: 4px;
@@ -388,6 +394,33 @@ button, input, select, textarea { font-family: inherit; }
 .hidden { display: none !important; }
 .nowrap { white-space: nowrap; }
 
+/* お知らせ */
+.notice-popup-lead { font-size: 14px; margin-bottom: 12px; }
+.notice-popup-lead strong { color: var(--danger); font-size: 18px; }
+.notice-popup-list { list-style: none; border: 1px solid var(--gray-bd); border-radius: 8px; overflow: hidden; }
+.notice-popup-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-top: 1px solid var(--gray-lt); }
+.notice-popup-item:first-child { border-top: none; }
+.notice-popup-info { flex: 1; min-width: 0; }
+.notice-popup-title { font-weight: 700; font-size: 14px; margin-top: 4px; }
+.notice-modal-actions { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; margin-top: 18px; }
+.notice-detail-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; padding-right: 24px; }
+.notice-detail-body { font-size: 14px; line-height: 1.8; background: var(--gray-lt); border-radius: 8px; padding: 16px; }
+.notice-detail-links { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+.notice-list { overflow: hidden; }
+.notice-item { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-top: 1px solid var(--gray-lt); cursor: pointer; transition: var(--trans); }
+.notice-item:first-child { border-top: none; }
+.notice-item:hover { background: var(--gray-lt); }
+.notice-item.unread { background: #FFFBF0; }
+.notice-item.unread:hover { background: #FFF4DB; }
+.notice-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; background: transparent; }
+.notice-item.unread .notice-dot { background: var(--danger); }
+.notice-item-main { flex: 1; min-width: 0; }
+.notice-item-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.notice-item .notice-title { font-size: 14px; margin-top: 4px; }
+.notice-item.unread .notice-title { font-weight: 700; color: var(--accent); }
+.notice-snippet { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+.notice-arrow { color: var(--gray); font-size: 20px; }
+
 /* ── レスポンシブ ── */
 @media (max-width: 900px) {
   .detail-grid, .two-col, .two-col-main { grid-template-columns: 1fr; }
@@ -398,7 +431,7 @@ button, input, select, textarea { font-family: inherit; }
   .header-search { display: none; }
   .header-inner { padding: 0 12px; gap: 6px; }
   .header-nav a, .header-nav button:not(.btn-lang) { padding: 6px 7px; font-size: 12px; }
-  #nav-home, #nav-search, #nav-help, #header-avatar { display: none; }
+  #nav-home, #nav-search, #nav-help, #header-avatar, .notices-label { display: none; }
   .logo { font-size: 16px; gap: 4px; }
   .header-nav, .header-nav-dynamic { gap: 2px; min-width: 0; }
   .page-wrap { padding: 20px 16px 48px; }
@@ -412,4 +445,9 @@ button, input, select, textarea { font-family: inherit; }
   .eli-actions .btn { flex: 1; }
   .step-item { font-size: 11px; padding: 9px 4px; }
   .info-list { grid-template-columns: 90px 1fr; }
+}
+@media (max-width: 400px) {
+  .logo { font-size: 14px; }
+  .header-nav a, .header-nav button:not(.btn-lang) { padding: 6px 4px; }
+  .btn-notices .notice-badge { margin-left: 1px; }
 }

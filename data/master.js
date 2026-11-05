@@ -24,31 +24,31 @@ const USERS = [
     id: "u001", name: "山田 太郎", kana: "ヤマダ タロウ", email: "yamada.taro@demo.ticket",
     password: "Tk#Yamada2026!", phone: "090-1111-2222", birthdate: "1985-04-12",
     postal: "100-0005", address: "東京都千代田区丸の内9-9-9 デモビル101",
-    card: "4980", memberSince: "2019-06-01", note: "標準ユーザー（購入履歴・お気に入りあり）",
+    card: "4980", memberSince: "2019-06-01", note: "標準ユーザー（購入履歴・お気に入りあり／新着お知らせ3件）",
   },
   {
     id: "u002", name: "鈴木 花子", kana: "スズキ ハナコ", email: "suzuki.hanako@demo.ticket",
     password: "H@nako$Live77", phone: "080-3333-4444", birthdate: "1992-08-25",
     postal: "530-0001", address: "大阪府大阪市北区梅田9-9-9",
-    card: "1234", memberSince: "2021-02-14", note: "コンサート好き（抽選申込中の履歴あり）",
+    card: "1234", memberSince: "2021-02-14", note: "コンサート好き（抽選申込中の履歴あり／新着お知らせ2件）",
   },
   {
     id: "u003", name: "田中 健一", kana: "タナカ ケンイチ", email: "tanaka.kenichi@demo.ticket",
     password: "K3n!Stadium88", phone: "070-5555-6666", birthdate: "1978-01-30",
     postal: "812-0011", address: "福岡県福岡市博多区博多駅前9-9-9",
-    card: "5678", memberSince: "2018-09-10", note: "スポーツ観戦（観覧済み・キャンセル履歴あり）",
+    card: "5678", memberSince: "2018-09-10", note: "スポーツ観戦（観覧済み・キャンセル履歴あり／お知らせは全件既読）",
   },
   {
     id: "u004", name: "佐藤 美咲", kana: "サトウ ミサキ", email: "sato.misaki@demo.ticket",
     password: "M!saki#Comic25", phone: "090-7777-8888", birthdate: "2007-11-05",
     postal: "460-0008", address: "愛知県名古屋市中区栄9-9-9",
-    card: "", memberSince: "2025-04-01", note: "クレジットカード未登録・即売会参加",
+    card: "", memberSince: "2025-04-01", note: "クレジットカード未登録・即売会参加（新着お知らせ1件）",
   },
   {
     id: "u005", name: "中村 龍也", kana: "ナカムラ リュウヤ", email: "nakamura.ryuya@demo.ticket",
     password: "Ryu@Stage2026$", phone: "080-9999-0000", birthdate: "1988-06-18",
     postal: "060-0001", address: "北海道札幌市中央区北一条西9-9-9",
-    card: "9012", memberSince: "2020-11-20", note: "購入履歴なし（新規購入テスト用）",
+    card: "9012", memberSince: "2020-11-20", note: "購入履歴なし（新規購入テスト用／お知らせ0件）",
   },
 ];
 
@@ -470,12 +470,13 @@ const PAYMENT_METHODS = [
 
 // ── サンプル購入履歴（初回起動時のみ投入） ─────────────────
 // perfOffset: 基準日からの日数（過去公演は観覧済み表示になる）
+// noticeUnread: true の注文は「購入完了／抽選申込受付」のお知らせが未読のまま届いている
 const SAMPLE_ORDERS_DEF = [
   { userId: "u001", eventId: "e101", perfIdx: 0, seatKey: "s",  items: { adult: 2, child: 1 }, receive: "eticket",  payment: "credit",  status: "purchased", createdOffset: -10 },
   { userId: "u001", eventId: "e501", perfIdx: 0, seatKey: "s",  items: { general: 2 },          receive: "eticket",  payment: "credit",  status: "purchased", createdOffset: -30 },
   { userId: "u001", eventId: "e301", perfIdx: 0, seatKey: "d1", items: { adult: 2, elem: 2 },   receive: "konbini",  payment: "konbini", status: "purchased", createdOffset: -5 },
   { userId: "u001", eventId: "e207", perfIdx: 1, seatKey: "a",  items: { general: 1 },          receive: "eticket",  payment: "qr",      status: "cancelled", createdOffset: -20 },
-  { userId: "u002", eventId: "e205", perfIdx: 0, seatKey: "ar", items: { general: 2 },          receive: "eticket",  payment: "credit",  status: "lottery",   createdOffset: -3 },
+  { userId: "u002", eventId: "e205", perfIdx: 0, seatKey: "ar", items: { general: 2 },          receive: "eticket",  payment: "credit",  status: "lottery",   createdOffset: -3, noticeUnread: true },
   { userId: "u002", eventId: "e201", perfIdx: 2, seatKey: "s",  items: { general: 2 },          receive: "delivery", payment: "credit",  status: "purchased", createdOffset: -15 },
   { userId: "u002", eventId: "e206", perfIdx: 0, seatKey: "st", items: { general: 1 },          receive: "eticket",  payment: "credit",  status: "purchased", createdOffset: -8 },
   { userId: "u003", eventId: "e103", perfIdx: 0, seatKey: "a",  items: { adult: 1 },            receive: "eticket",  payment: "credit",  status: "purchased", createdOffset: -12 },
@@ -483,7 +484,7 @@ const SAMPLE_ORDERS_DEF = [
   { userId: "u003", eventId: "e109", perfIdx: 0, seatKey: "s",  items: { adult: 2 },            receive: "eticket",  payment: "credit",  status: "cancelled", createdOffset: -9 },
   { userId: "u003", eventId: "e501", perfIdx: 1, seatKey: "a",  items: { general: 1, u25: 1 },  receive: "eticket",  payment: "credit",  status: "purchased", createdOffset: -25 },
   { userId: "u004", eventId: "e404", perfIdx: 0, seatKey: "gn", items: { adultm: 1 },           receive: "eticket",  payment: "konbini", status: "purchased", createdOffset: -14 },
-  { userId: "u004", eventId: "e004", perfIdx: 0, seatKey: "gn", items: { adultm: 1 },           receive: "eticket",  payment: "konbini", status: "lottery",   createdOffset: -1 },
+  { userId: "u004", eventId: "e004", perfIdx: 0, seatKey: "gn", items: { adultm: 1 },           receive: "eticket",  payment: "konbini", status: "lottery",   createdOffset: -1, noticeUnread: true },
 ];
 
 // ── サンプルお気に入り ─────────────────────────────────────
@@ -492,4 +493,43 @@ const SAMPLE_FAVORITES = [
   { userId: "u002", eventId: "e201" }, { userId: "u002", eventId: "e205" }, { userId: "u002", eventId: "e206" }, { userId: "u002", eventId: "e002" },
   { userId: "u003", eventId: "e001" }, { userId: "u003", eventId: "e109" },
   { userId: "u004", eventId: "e004" }, { userId: "u004", eventId: "e401" },
+];
+
+// ── お知らせ（メッセージ） ─────────────────────────────────
+const NOTICE_CATEGORIES = [
+  { key: "campaign", name: "キャンペーン", en: "Campaign", emoji: "🎁", cls: "badge-warn" },
+  { key: "ticket",   name: "チケット",     en: "Tickets",  emoji: "🎫", cls: "badge-success" },
+  { key: "lottery",  name: "抽選",         en: "Lottery",  emoji: "🎲", cls: "badge-purple" },
+  { key: "info",     name: "サービス",     en: "Service",  emoji: "📢", cls: "badge-primary" },
+];
+
+// サンプルお知らせ（初回起動時のみ投入）
+// offset: BASE_DATE からの日数（0以下） / to: 配信先ユーザー / readBy: 既読済みのユーザー
+// ※ 購入完了・抽選申込受付・キャンセルのお知らせは SAMPLE_ORDERS_DEF から自動生成（app.js）
+// 新着パターン: u001=3件 / u002=2件 / u004=1件 / u003=新着なし（全件既読） / u005=お知らせ0件
+const SAMPLE_NOTICES_DEF = [
+  { id: "n01", category: "campaign", offset: -12, time: "12:00", to: ["u001", "u002", "u003", "u004"], readBy: ["u001", "u002", "u003", "u004"],
+    title: "【期間限定】秋のエンタメ応援キャンペーン開催中", titleEn: "[Limited Time] Autumn Entertainment Campaign",
+    body: "いつもTicketMarketをご利用いただきありがとうございます。\n\n期間中、対象イベントのチケットをご購入いただいた方の中から抽選で100名様に、次回使えるシステム利用料無料クーポンをプレゼントします。\n\n※ 本キャンペーンはデモ用の架空のキャンペーンです。",
+    bodyEn: "Thank you for using TicketMarket.\n\n100 lucky customers who purchase tickets for eligible events during the campaign period will receive a coupon waiving the system fee on their next order.\n\n* This is a fictitious campaign for demo purposes." },
+  { id: "n02", category: "info", offset: -9, time: "18:00", to: ["u001", "u002", "u003"], readBy: ["u001", "u002", "u003"],
+    title: "【メンテナンス】システムメンテナンス実施のお知らせ", titleEn: "[Maintenance] Scheduled System Maintenance",
+    body: "下記の日程でシステムメンテナンスを実施いたします。メンテナンス中はチケットの購入・マイページのご利用ができません。\n\n実施時間：深夜 2:00〜5:00（予定）\n\nご不便をおかけしますが、ご理解のほどよろしくお願いいたします。",
+    bodyEn: "We will perform scheduled system maintenance. Ticket purchases and My Page will be unavailable during the maintenance.\n\nTime: 2:00 - 5:00 AM (planned)\n\nWe apologize for any inconvenience." },
+  { id: "n03", category: "campaign", offset: -2, time: "10:00", to: ["u001", "u002", "u003"], readBy: ["u003"], eventId: "e002",
+    title: "バルテス・ドリームライブ 2026 チケット好評発売中！", titleEn: "Valtes Dream Live 2026 – Tickets on Sale Now!",
+    body: "人気アーティストが集結する一夜限りのドリームライブ「バルテス・ドリームライブ 2026」のチケットを好評発売中です。\n\nVIP席（グッズ付き）は完売となりました。S席・A席は引き続き販売中です。お早めにお求めください。",
+    bodyEn: "Tickets for \"Valtes Dream Live 2026\", a one-night-only show featuring popular artists, are now on sale.\n\nVIP seats (with merchandise) are sold out. Other seats are still available – get yours soon!" },
+  { id: "n04", category: "info", offset: 0, time: "09:00", to: ["u001", "u003"], readBy: ["u003"],
+    title: "【重要】利用規約改定のお知らせ", titleEn: "[Important] Revision of Terms of Use",
+    body: "TicketMarket 利用規約を改定いたします。主な変更点は以下のとおりです。\n\n・電子チケットの分配に関する規定の追加\n・キャンセル受付期限の明確化（公演日の3日前 23:59 まで）\n\n改定後の規約はヘルプページの「ご利用ルール」でご確認いただけます。",
+    bodyEn: "We are revising the TicketMarket Terms of Use. Main changes:\n\n- New rules on transferring e-tickets\n- Clarified cancellation deadline (23:59, 3 days before the performance)\n\nSee \"Rules\" on the Help page for the revised terms." },
+  { id: "n05", category: "campaign", offset: -1, time: "19:00", to: ["u001"], readBy: [], eventId: "e303",
+    title: "お気に入りのイベント「OCEAN BEAT FES 2026」の最新情報", titleEn: "Update on your favourite event \"OCEAN BEAT FES 2026\"",
+    body: "お気に入りに登録されているイベント「OCEAN BEAT FES 2026」の出演アーティスト第2弾が発表されました。\n\nチケットは好評発売中です。詳細はイベントページをご確認ください。",
+    bodyEn: "The second wave of artists for your favourite event \"OCEAN BEAT FES 2026\" has been announced.\n\nTickets are on sale now. See the event page for details." },
+  { id: "n06", category: "info", offset: -7, time: "11:00", to: ["u004"], readBy: ["u004"],
+    title: "クレジットカード登録のご案内", titleEn: "Register a Credit Card",
+    body: "クレジットカードを登録すると、チケット購入時にクレジットカード払い（手数料無料）をご利用いただけます。\n\nマイページの「ユーザー情報」→「登録情報を変更する」から登録できます。",
+    bodyEn: "Register a credit card to pay by card (no fee) when purchasing tickets.\n\nGo to My Page → Profile → Edit Information to register." },
 ];

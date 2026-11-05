@@ -74,7 +74,106 @@ function buildPage({ title, activePage = "" }) {
   // buildPage は App.init() の renderHeader() より後に実行されるためここで再描画する
   App.renderHeader();
   I18n.apply();
+  NoticeUI.checkPopup();
 }
+
+// ── お知らせ（新着モーダル・詳細モーダル） ─────────────────
+// 新着モーダル: ログイン（会員登録）直後に表示するページで、未読があれば1回だけ表示
+// 「見る」で詳細を開封（既読化）。詳細からは新着一覧へ戻れる
+const NoticeUI = (() => {
+  let _popupIds = [];      // 新着モーダルで通知した未読お知らせ
+
+  const _esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+  function fmtDateTime(iso) {
+    const d = new Date(iso);
+    return `${App.fmtDateDow(App.fmtDate(d))} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  }
+
+  function categoryBadge(n) {
+    const c = App.noticeCategory(n.category);
+    return `<span class="badge ${c.cls} notice-category" data-category="${c.key}">${c.emoji} ${I18n.t(c.name, c.en)}</span>`;
+  }
+
+  function _modal(html) {
+    let overlay = document.getElementById("notice-modal");
+    if (!overlay) {
+      overlay = document.createElement("div");
+      overlay.className = "modal-overlay";
+      overlay.id = "notice-modal";
+      overlay.addEventListener("click", e => { if (e.target === overlay) close(); });
+      document.body.appendChild(overlay);
+    }
+    overlay.innerHTML = `<div class="modal-box wide">${html}</div>`;
+  }
+
+  function close() {
+    document.getElementById("notice-modal")?.remove();
+    _popupIds = [];
+    // 既読状態が変わった可能性があるので通知（マイページの一覧・件数を再描画）
+    document.dispatchEvent(new CustomEvent("tm:notices-changed"));
+  }
+
+  function checkPopup() {
+    const list = App.takeNoticePopup();
+    if (!list.length) return;
+    _popupIds = list.map(n => n.id);
+    showPopup();
+  }
+
+  // 新着一覧（未読のまま残っているものだけ表示）
+  function showPopup() {
+    const list = _popupIds.map(App.getNotice).filter(n => n && !n.read);
+    if (!list.length) { close(); return; }
+    _modal(`
+      <button class="modal-close" id="notice-popup-close" onclick="NoticeUI.close()">✕</button>
+      <div id="notice-popup" data-count="${list.length}">
+        <div class="modal-title">📬 ${I18n.t("新しいお知らせが届いています", "You have new notices")}</div>
+        <p class="notice-popup-lead">${I18n.t(`新しいお知らせが <strong id="notice-popup-count">${list.length}</strong> 件あります。`,
+          `You have <strong id="notice-popup-count">${list.length}</strong> new notice${list.length > 1 ? "s" : ""}.`)}</p>
+        <ul class="notice-popup-list" id="notice-popup-list">
+          ${list.map(n => `
+            <li class="notice-popup-item" id="notice-popup-item-${n.id}" data-notice-id="${n.id}" data-category="${n.category}">
+              <div class="notice-popup-info">
+                <div>${categoryBadge(n)} <span class="muted notice-date">${fmtDateTime(n.createdAt)}</span></div>
+                <div class="notice-popup-title notice-title">${_esc(App.noticeTitle(n))}</div>
+              </div>
+              <button class="btn btn-primary btn-sm btn-notice-view" id="btn-notice-view-${n.id}" onclick="NoticeUI.open('${n.id}', true)">${I18n.t("見る", "View")}</button>
+            </li>`).join("")}
+        </ul>
+        <div class="notice-modal-actions">
+          <button class="btn btn-secondary" id="btn-notice-popup-later" onclick="NoticeUI.close()">${I18n.t("あとで見る", "Later")}</button>
+          <button class="btn btn-accent" id="btn-notice-popup-list" onclick="NoticeUI.close();I18n.go('mypage.html?tab=notices')">${I18n.t("お知らせ一覧へ", "All Notices")}</button>
+        </div>
+      </div>`);
+  }
+
+  // 詳細（開封＝既読化）。fromPopup: 新着モーダルから開いた場合は「新着一覧に戻る」を表示
+  function open(id, fromPopup = false) {
+    const n = App.getNotice(id);
+    if (!n) return;
+    App.markNoticeRead(id);
+    const e = n.eventId ? App.getEvent(n.eventId) : null;
+    const rest = fromPopup ? _popupIds.map(App.getNotice).filter(x => x && !x.read).length : 0;
+    _modal(`
+      <button class="modal-close" id="notice-detail-close" onclick="NoticeUI.close()">✕</button>
+      <div id="notice-detail" data-notice-id="${n.id}" data-category="${n.category}">
+        <div class="notice-detail-meta">${categoryBadge(n)} <span class="muted" id="notice-detail-date">${fmtDateTime(n.createdAt)}</span></div>
+        <div class="modal-title" id="notice-detail-title">${_esc(App.noticeTitle(n))}</div>
+        <div class="notice-detail-body" id="notice-detail-body">${_esc(App.noticeBody(n)).replace(/\n/g, "<br>")}</div>
+        ${e || n.tab ? `<div class="notice-detail-links">
+          ${e ? `<button class="btn btn-secondary btn-sm" id="btn-notice-event" onclick="I18n.open('event.html?id=${e.id}','_blank')">${I18n.t("イベント詳細を見る ↗", "View Event ↗")}</button>` : ""}
+          ${n.tab ? `<button class="btn btn-secondary btn-sm" id="btn-notice-tab" onclick="NoticeUI.close();I18n.go('mypage.html?tab=${n.tab}')">${I18n.t("購入チケットを確認する", "View My Tickets")}</button>` : ""}
+        </div>` : ""}
+        <div class="notice-modal-actions">
+          ${fromPopup && rest ? `<button class="btn btn-secondary" id="btn-notice-back" onclick="NoticeUI.showPopup()">${I18n.t(`← 新着一覧に戻る（残り${rest}件）`, `← Back to new notices (${rest} left)`)}</button>` : ""}
+          <button class="btn btn-primary" id="btn-notice-detail-close" onclick="NoticeUI.close()">${I18n.t("閉じる", "Close")}</button>
+        </div>
+      </div>`);
+  }
+
+  return { checkPopup, showPopup, open, close, categoryBadge, fmtDateTime, esc: _esc };
+})();
 
 // 言語切替
 function toggleLang() {

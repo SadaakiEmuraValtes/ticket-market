@@ -18,14 +18,22 @@
   </div>
 
   <script>
-    let currentTab = "profile", orderFilter = "all", editing = false;
+    let currentTab = "profile", orderFilter = "all", noticeFilter = "all", editing = false;
+    const TABS = ["profile", "orders", "favorites", "notices"];
 
     document.addEventListener("DOMContentLoaded", () => {
       buildPage({ title: I18n.t("マイページ", "My Page") });
       if (!App.requireLogin()) return;
       const t = new URLSearchParams(window.location.search).get("tab");
-      if (["profile", "orders", "favorites"].includes(t)) currentTab = t;
+      if (TABS.includes(t)) currentTab = t;
       renderMyPage();
+    });
+
+    // 新着モーダル・詳細モーダルで既読になったら件数と一覧を更新
+    document.addEventListener("tm:notices-changed", () => {
+      if (!App.isLoggedIn() || !document.getElementById("mypage-tabs")) return;
+      updateNoticeCounts();
+      if (currentTab === "notices") renderNotices();
     });
 
     function renderMyPage() {
@@ -45,6 +53,7 @@
             <div><div style="font-size:22px;font-weight:700;color:var(--primary)" id="count-upcoming">${upcoming}</div><div class="muted">${I18n.t("予定のチケット", "Upcoming")}</div></div>
             <div><div style="font-size:22px;font-weight:700;color:var(--purple)" id="count-lottery">${lottery}</div><div class="muted">${I18n.t("抽選申込中", "Lottery")}</div></div>
             <div><div style="font-size:22px;font-weight:700;color:#E11D48" id="count-favorites">${App.getFavoriteEvents().length}</div><div class="muted">${I18n.t("お気に入り", "Favourites")}</div></div>
+            <div><div style="font-size:22px;font-weight:700;color:var(--warn)" id="count-notices">${App.unreadNoticeCount()}</div><div class="muted">${I18n.t("未読のお知らせ", "Unread")}</div></div>
             <button id="btn-logout" class="btn btn-secondary btn-sm" style="align-self:center" onclick="App.logout()">${I18n.t("ログアウト", "Log Out")}</button>
           </div>
         </div>
@@ -53,16 +62,19 @@
           <button class="tab-btn" id="tab-profile" onclick="switchTab('profile')">${I18n.t("👤 ユーザー情報", "👤 Profile")}</button>
           <button class="tab-btn" id="tab-orders" onclick="switchTab('orders')">${I18n.t("🎫 購入チケット", "🎫 My Tickets")}</button>
           <button class="tab-btn" id="tab-favorites" onclick="switchTab('favorites')">${I18n.t("❤️ お気に入り", "❤️ Favourites")}</button>
+          <button class="tab-btn" id="tab-notices" onclick="switchTab('notices')">${I18n.t("🔔 お知らせ", "🔔 Notices")}<span id="tab-notice-badge" class="notice-badge hidden"></span></button>
         </div>
         <div id="pane-profile"></div>
         <div id="pane-orders" class="hidden"></div>
-        <div id="pane-favorites" class="hidden"></div>`;
+        <div id="pane-favorites" class="hidden"></div>
+        <div id="pane-notices" class="hidden"></div>`;
+      updateNoticeCounts();
       switchTab(currentTab);
     }
 
     function switchTab(tab) {
       currentTab = tab;
-      ["profile", "orders", "favorites"].forEach(t => {
+      TABS.forEach(t => {
         document.getElementById("tab-" + t).classList.toggle("active", t === tab);
         document.getElementById("pane-" + t).classList.toggle("hidden", t !== tab);
       });
@@ -70,6 +82,7 @@
       if (tab === "profile") renderProfile();
       if (tab === "orders") renderOrders();
       if (tab === "favorites") renderFavorites();
+      if (tab === "notices") renderNotices();
     }
 
     // ══════════ ユーザー情報 ══════════
@@ -336,6 +349,60 @@
       App.showToast(I18n.t("お気に入りを解除しました", "Removed from favourites."), "info");
       document.getElementById("count-favorites").textContent = App.getFavoriteEvents().length;
       renderFavorites();
+    }
+
+    // ══════════ お知らせ ══════════
+    const NOTICE_FILTERS = {
+      all:    () => true,
+      unread: n => !n.read,
+      ...Object.fromEntries(NOTICE_CATEGORIES.map(c => [c.key, n => n.category === c.key])),
+    };
+
+    function updateNoticeCounts() {
+      const unread = App.unreadNoticeCount();
+      document.getElementById("count-notices").textContent = unread;
+      const badge = document.getElementById("tab-notice-badge");
+      badge.textContent = unread;
+      badge.classList.toggle("hidden", !unread);
+    }
+
+    function renderNotices() {
+      const all = App.getNotices();
+      const unread = all.filter(n => !n.read).length;
+      const count = k => all.filter(NOTICE_FILTERS[k]).length;
+      const labels = {
+        all: I18n.t("すべて", "All"), unread: I18n.t("未読", "Unread"),
+        ...Object.fromEntries(NOTICE_CATEGORIES.map(c => [c.key, `${c.emoji} ${I18n.t(c.name, c.en)}`])),
+      };
+      const list = all.filter(NOTICE_FILTERS[noticeFilter]);
+      document.getElementById("pane-notices").innerHTML = `
+        <div class="filter-bar">
+          <div class="chips" id="notice-filters">
+            ${Object.keys(NOTICE_FILTERS).map(k => `<button class="chip${noticeFilter === k ? " active" : ""}" id="notice-filter-${k}" onclick="noticeFilter='${k}';renderNotices()">${labels[k]} (${count(k)})</button>`).join("")}
+          </div>
+          <button id="btn-notice-read-all" class="btn btn-secondary btn-sm" style="margin-left:auto" ${unread ? "" : "disabled"} onclick="readAllNotices()">${I18n.t("すべて既読にする", "Mark all as read")}</button>
+        </div>
+        ${!list.length
+          ? `<div class="alert alert-info" id="no-notices">${all.length ? I18n.t("該当するお知らせはありません。", "No matching notices.") : I18n.t("お知らせはまだありません。", "You have no notices yet.")}</div>`
+          : `<div class="card notice-list" id="notice-list">
+              ${list.map(n => `
+                <div class="notice-item${n.read ? "" : " unread"}" id="notice-${n.id}" data-notice-id="${n.id}" data-category="${n.category}" data-read="${n.read}" onclick="NoticeUI.open('${n.id}')">
+                  <span class="notice-dot" title="${n.read ? I18n.t("既読", "Read") : I18n.t("未読", "Unread")}"></span>
+                  <div class="notice-item-main">
+                    <div class="notice-item-meta">${NoticeUI.categoryBadge(n)}${n.read ? "" : `<span class="badge badge-danger notice-new">NEW</span>`}<span class="muted notice-date">${NoticeUI.fmtDateTime(n.createdAt)}</span></div>
+                    <div class="notice-title">${NoticeUI.esc(App.noticeTitle(n))}</div>
+                    <div class="notice-snippet muted">${NoticeUI.esc(App.noticeBody(n).replace(/\s+/g, " "))}</div>
+                  </div>
+                  <span class="notice-arrow">›</span>
+                </div>`).join("")}
+            </div>`}`;
+    }
+
+    function readAllNotices() {
+      App.markAllNoticesRead();
+      App.showToast(I18n.t("すべてのお知らせを既読にしました", "All notices marked as read."), "success");
+      updateNoticeCounts();
+      renderNotices();
     }
   </script>
 </body>
