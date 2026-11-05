@@ -74,11 +74,10 @@ function buildPage({ title, activePage = "" }) {
   // buildPage は App.init() の renderHeader() より後に実行されるためここで再描画する
   App.renderHeader();
   I18n.apply();
-  NoticeUI.checkPopup();
 }
 
 // ── お知らせ（新着モーダル・詳細モーダル） ─────────────────
-// 新着モーダル: ログイン（会員登録）直後に表示するページで、未読があれば1回だけ表示
+// 新着モーダル: お知らせ画面（マイページのお知らせタブ）を開いたときに未読があれば表示
 // 「見る」で詳細を開封（既読化）。詳細からは新着一覧へ戻れる
 const NoticeUI = (() => {
   let _popupIds = [];      // 新着モーダルで通知した未読お知らせ
@@ -114,8 +113,8 @@ const NoticeUI = (() => {
     document.dispatchEvent(new CustomEvent("tm:notices-changed"));
   }
 
-  function checkPopup() {
-    const list = App.takeNoticePopup();
+  function showNew() {
+    const list = App.getNotices().filter(n => !n.read);
     if (!list.length) return;
     _popupIds = list.map(n => n.id);
     showPopup();
@@ -143,7 +142,6 @@ const NoticeUI = (() => {
         </ul>
         <div class="notice-modal-actions">
           <button class="btn btn-secondary" id="btn-notice-popup-later" onclick="NoticeUI.close()">${I18n.t("あとで見る", "Later")}</button>
-          <button class="btn btn-accent" id="btn-notice-popup-list" onclick="NoticeUI.close();I18n.go('mypage.html?tab=notices')">${I18n.t("お知らせ一覧へ", "All Notices")}</button>
         </div>
       </div>`);
   }
@@ -172,7 +170,7 @@ const NoticeUI = (() => {
       </div>`);
   }
 
-  return { checkPopup, showPopup, open, close, categoryBadge, fmtDateTime, esc: _esc };
+  return { showNew, showPopup, open, close, categoryBadge, fmtDateTime, esc: _esc };
 })();
 
 // 言語切替

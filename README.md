@@ -23,7 +23,7 @@ python -m http.server 8080   # または npx serve .
 
 | 名前 | メールアドレス | パスワード | カード | 特徴 | 新着お知らせ |
 |------|--------------|-----------|--------|------|------|
-| 山田 太郎 | yamada.taro@demo.ticket | `Tk#Yamada2026!` | 4980 | 標準（購入履歴・お気に入りあり） | **3件**（ログイン時モーダル表示） |
+| 山田 太郎 | yamada.taro@demo.ticket | `Tk#Yamada2026!` | 4980 | 標準（購入履歴・お気に入りあり） | **3件** |
 | 鈴木 花子 | suzuki.hanako@demo.ticket | `H@nako$Live77` | 1234 | 抽選申込中の履歴あり | **2件** |
 | 田中 健一 | tanaka.kenichi@demo.ticket | `K3n!Stadium88` | 5678 | 観覧済み・キャンセル履歴あり | なし（全9件既読・モーダル非表示） |
 | 佐藤 美咲 | sato.misaki@demo.ticket | `M!saki#Comic25` | 未登録 | クレジットカード払い不可の検証用 | **1件** |
@@ -82,7 +82,7 @@ ticket-market/
 | 💳 購入手続き | 受取方法（電子チケット/コンビニ発券/配送）・支払方法（クレジット/コンビニ払い/QR）・手数料自動計算・同意チェック |
 | 🎲 抽選販売 | 抽選申込 → 当落発表日以降にマイページで当選/落選表示 |
 | 👤 マイページ | ユーザー情報の表示・編集（カード登録含む）、購入チケット（ステータス絞込・詳細・電子チケットQR表示・キャンセル）、お気に入り |
-| 🔔 お知らせ | ヘッダー「🔔 お知らせ」（未読数バッジ）／マイページ「お知らせ」タブ。カテゴリ（キャンペーン/チケット/抽選/サービス）・未読で絞り込み、すべて既読。ログイン（会員登録）直後に未読があれば新着モーダルを1回表示し、「見る」で開封（既読化） |
+| 🔔 お知らせ | ヘッダー「🔔 お知らせ」（未読数バッジ）／マイページ「お知らせ」タブ。カテゴリ（キャンペーン/チケット/抽選/サービス）・未読で絞り込み、すべて既読。お知らせ画面を開いたときに未読があれば新着モーダルを表示し、「見る」で開封（既読化） |
 | ❤️ お気に入り / 👀 閲覧履歴 | お気に入り登録（ログイン必須）、最近チェックしたイベント（トップに表示） |
 | ⏳ Loading演出 | ログイン・検索・空席確認・購入確定・会員登録で3〜5秒のオーバーレイ（操作ロック） |
 | 🌐 英語表示 | `?lang=en` または ヘッダーの EN ボタン |
@@ -100,7 +100,7 @@ ticket-market/
 7. キャンセルは**公演日の3日前 23:59 まで**（キャンセル不可イベントを除く）。抽選申込は受付期間中のみ取消可
 8. 手数料：システム利用料 ¥330/枚（有料券）、コンビニ発券 ¥110/枚、配送 ¥880/件、コンビニ払い ¥220
 9. お知らせはユーザーごとに受信・既読状態を保持。購入完了・抽選申込受付・キャンセル・抽選申込取消・会員登録時に自動で届く（未読）
-10. 新着モーダルは**ログイン（会員登録）直後に表示するページで1回だけ**表示（未読がある場合）。ログイン中に届いたお知らせはヘッダーのバッジのみ更新
+10. 新着モーダルは**お知らせ画面（ヘッダー「🔔 お知らせ」／マイページ「お知らせ」タブ）を開いたとき**、未読があれば表示。他の画面ではヘッダーのバッジで未読数を通知
 
 ---
 
@@ -125,7 +125,7 @@ Demo-Travel と同様、XPath/CSS で安定して要素を特定できるよう 
 | 購入履歴（注文番号ベース） | `tr[data-order-no="TM-…"][data-order-status="purchased"]`、`#btn-ticket-TM-…` / `#btn-cancel-TM-…` / `#btn-order-detail-TM-…` |
 | ユーザー情報 | `#profile-name` `#profile-email` … / 編集 `#pf-name` … `#btn-save-profile` |
 | お知らせ（ヘッダー） | `#header-notices[data-unread="3"]` / 未読バッジ `#header-notice-badge`（未読0件のときは要素なし） |
-| 新着モーダル | `#notice-popup[data-count]` / `#notice-popup-count` / 各行 `.notice-popup-item[data-notice-id]` / 見る `#btn-notice-view-{お知らせID}`（`.btn-notice-view`） / `#btn-notice-popup-later` / `#btn-notice-popup-list` |
+| 新着モーダル | `#notice-popup[data-count]` / `#notice-popup-count` / 各行 `.notice-popup-item[data-notice-id]` / 見る `#btn-notice-view-{お知らせID}`（`.btn-notice-view`） / `#btn-notice-popup-later` |
 | お知らせ詳細モーダル | `#notice-detail[data-notice-id]` / `#notice-detail-title` `#notice-detail-body` `#notice-detail-date` / `#btn-notice-back`（新着一覧へ） / `#btn-notice-detail-close` / `#btn-notice-event` / `#btn-notice-tab` |
 | お知らせ一覧（マイページ） | `#tab-notices` / `#tab-notice-badge` / `#count-notices` / `#notice-filter-all\|unread\|campaign\|ticket\|lottery\|info` / `.notice-item[data-notice-id][data-read="false"][data-category]` / `#btn-notice-read-all` / 空 `#no-notices` |
 | ローディング | `#loading-overlay`（消えるまで待機） |
@@ -136,7 +136,7 @@ Demo-Travel と同様、XPath/CSS で安定して要素を特定できるよう 
 
 ## 💾 データ保存（localStorage）
 
-`tm_user`（セッション）/ `tm_users`（会員）/ `tm_orders`（購入履歴）/ `tm_favorites` / `tm_search` / `tm_cart` / `tm_history` / `tm_notices`（お知らせ・既読状態）/ `tm_notice_popup`（ログイン直後の新着モーダル表示待ち）
+`tm_user`（セッション）/ `tm_users`（会員）/ `tm_orders`（購入履歴）/ `tm_favorites` / `tm_search` / `tm_cart` / `tm_history` / `tm_notices`（お知らせ・既読状態）
 ヘルプ画面下部の「データを初期化する」で初期状態に戻せます。
 
 ---

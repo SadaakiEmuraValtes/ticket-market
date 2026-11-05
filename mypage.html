@@ -82,7 +82,7 @@
       if (tab === "profile") renderProfile();
       if (tab === "orders") renderOrders();
       if (tab === "favorites") renderFavorites();
-      if (tab === "notices") renderNotices();
+      if (tab === "notices") { renderNotices(); NoticeUI.showNew(); }
     }
 
     // ══════════ ユーザー情報 ══════════

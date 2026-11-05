@@ -24,7 +24,6 @@ const App = (() => {
     CART:      "tm_cart",       // 購入手続き中のチケット
     HISTORY:   "tm_history",    // 最近チェックしたイベント
     NOTICES:   "tm_notices",    // お知らせ（ユーザーごとの受信・既読状態）
-    NOTICE_POPUP: "tm_notice_popup", // ログイン直後の新着モーダル表示待ち（ユーザーID）
   };
 
   const _t = (ja, en) => (typeof I18n !== "undefined" ? I18n.t(ja, en) : ja);
@@ -105,7 +104,6 @@ const App = (() => {
     if (!user) return { ok: false, msg: _t("メールアドレスまたはパスワードが正しくありません。", "Incorrect email or password.") };
     _state.currentUser = user;
     _write(LS.USER, { id: user.id });
-    _write(LS.NOTICE_POPUP, user.id);
     renderHeader();
     return { ok: true, user };
   }
@@ -151,7 +149,6 @@ const App = (() => {
       body: `${user.name} 様\n\nTicketMarket への会員登録ありがとうございます。\nスポーツ・コンサート・イベント・即売会・演劇などのチケットをお楽しみください。\n\nクレジットカードを登録すると、手数料無料のクレジットカード払いをご利用いただけます（マイページ → ユーザー情報）。`,
       bodyEn: `Dear ${user.name},\n\nThank you for registering with TicketMarket.\nEnjoy tickets for sports, concerts, events, markets and theater.\n\nRegister a credit card on My Page → Profile to pay by card with no fee.`,
     });
-    _write(LS.NOTICE_POPUP, user.id);
     renderHeader();
     return { ok: true, user };
   }
@@ -567,15 +564,6 @@ const App = (() => {
   function noticeTitle(n) { return _t(n.title, n.titleEn || n.title); }
   function noticeBody(n)  { return _t(n.body, n.bodyEn || n.body); }
 
-  // ログイン直後の新着モーダル: 表示待ちなら未読一覧を返す（表示待ちフラグは1回で消える）
-  function takeNoticePopup() {
-    const uid = _read(LS.NOTICE_POPUP, null);
-    if (!uid) return [];
-    localStorage.removeItem(LS.NOTICE_POPUP);
-    if (!isLoggedIn() || uid !== _state.currentUser.id) return [];
-    return getNotices().filter(n => !n.read);
-  }
-
   // ── ヘッダー描画 ──────────────────────────────────────────
   function renderHeader() {
     const navEl = document.getElementById("header-nav-dynamic");
@@ -741,7 +729,7 @@ const App = (() => {
     getOrders, getOrder, orderStatus, orderStatusLabel, canCancel, cancelOrder, ticketSeats,
     isFavorite, toggleFavorite, getFavoriteEvents,
     getNotices, getNotice, unreadNoticeCount, markNoticeRead, markAllNoticesRead,
-    noticeCategory, noticeTitle, noticeBody, takeNoticePopup,
+    noticeCategory, noticeTitle, noticeBody,
     addHistory, getHistory, clearHistory,
     fmtDate, fmtDateSlash, fmtDateDow, fmtDateJP, fmtPeriod, parseDateStr, dowName, fmtPrice, idSafe,
     genreColor, genreEmoji,
