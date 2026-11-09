@@ -697,7 +697,8 @@ const App = (() => {
     document.body.appendChild(el);
   }
   function hideLoading() { document.getElementById("loading-overlay")?.remove(); }
-  function loadingDelay() { return 3000 + Math.random() * 2000; }
+  // ローディング演出の待ち時間（ms）。既定は3〜5秒
+  function loadingDelay(min = 3000, max = 5000) { return min + Math.random() * (max - min); }
 
   function showToast(msg, type = "info") {
     let c = document.getElementById("toast-container");

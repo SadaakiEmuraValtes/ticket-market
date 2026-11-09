@@ -152,7 +152,7 @@
         I18n.t("受取方法「配送」は公演日の10日前まで、支払方法「コンビニ払い」は公演日の3日前までのお申込みで選択できます", "Delivery requires 10+ days, convenience store payment requires 3+ days before the performance"),
         I18n.t("クレジットカード払いはカード登録済みの会員のみ利用できます（マイページで登録可）", "Credit card payment requires a registered card (register on My Page)"),
         I18n.t("キャンセルは公演日の3日前 23:59 まで可能です（キャンセル不可のイベントを除く）。抽選申込は受付期間中のみ取消可", "Cancellation is possible until 23:59, 3 days before the performance (except non-cancellable events)"),
-        I18n.t("ログイン・検索・空席確認・購入確定時に3〜5秒の処理中表示があります（操作ロック）", "Login, search, availability checks and purchase show a 3-5 second loading overlay"),
+        I18n.t("ログイン時に0.5〜1.5秒、検索・空席確認・購入確定時に3〜5秒の処理中表示があります（操作ロック）", "Login shows a 0.5-1.5 second loading overlay; search, availability checks and purchase show 3-5 seconds"),
       ];
       document.getElementById("rules-list").innerHTML = rules.map((r, i) => `<li id="rule-${i + 1}">${r}</li>`).join("");
     }

@@ -86,7 +86,7 @@
         const redir = sessionStorage.getItem("tm_redirect_after_login");
         sessionStorage.removeItem("tm_redirect_after_login");
         setTimeout(() => { if (redir) window.location.href = redir; else I18n.go("mypage.html"); }, 500);
-      }, App.loadingDelay());
+      }, App.loadingDelay(500, 1500));  // ログインは0.5〜1.5秒
     }
   </script>
 </body>
